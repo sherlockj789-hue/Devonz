@@ -71,6 +71,8 @@ export function UserMessage({ content, parts }: UserMessageProps) {
                   alt={`Image ${index + 1}`}
                   className="max-w-full h-auto rounded-lg border border-bolt-elements-borderColor"
                   style={{ maxHeight: '256px', objectFit: 'contain' }}
+                  width={256}
+                  height={256}
                 />
               ))}
             </div>
