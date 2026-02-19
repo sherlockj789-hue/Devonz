@@ -240,6 +240,7 @@ const CloudProvidersTab = () => {
                           <input
                             type="text"
                             inputMode="url"
+                            autoComplete="url"
                             spellCheck={false}
                             defaultValue={provider.settings.baseUrl}
                             placeholder={`Enter ${provider.name} base URL`}

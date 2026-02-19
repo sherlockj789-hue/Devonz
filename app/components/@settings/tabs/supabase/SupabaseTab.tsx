@@ -546,6 +546,7 @@ export default function SupabaseTab() {
                                 <div className="flex items-center gap-2 mt-1">
                                   <input
                                     type="text"
+                                    autoComplete="off"
                                     spellCheck={false}
                                     value={connection.credentials.supabaseUrl || ''}
                                     readOnly

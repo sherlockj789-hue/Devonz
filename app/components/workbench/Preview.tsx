@@ -1242,6 +1242,7 @@ Add these rules to style the elements as specified. The !important flags ensure 
             className="w-full bg-transparent outline-none text-xs font-mono truncate"
             type="text"
             inputMode="url"
+            autoComplete="off"
             spellCheck={false}
             value={localPreviewUrl || ''}
             onChange={(event) => {

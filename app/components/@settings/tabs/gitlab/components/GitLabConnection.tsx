@@ -102,6 +102,7 @@ export default function GitLabConnection({ connectionTest, onTestConnection }: G
               <input
                 type="text"
                 inputMode="url"
+                autoComplete="url"
                 spellCheck={false}
                 value={gitlabUrl}
                 onChange={(e) => setGitlabUrl(e.target.value)}

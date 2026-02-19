@@ -128,6 +128,7 @@ export function WebSearch({ onSearchResult, disabled }: WebSearchProps) {
           <input
             ref={inputRef}
             type="url"
+            autoComplete="url"
             spellCheck={false}
             value={url}
             onChange={(e) => setUrl(e.target.value)}

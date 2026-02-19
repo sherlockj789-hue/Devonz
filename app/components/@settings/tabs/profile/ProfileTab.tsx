@@ -137,6 +137,7 @@ export default function ProfileTab() {
               </div>
               <input
                 type="text"
+                autoComplete="username"
                 value={profile.username}
                 onChange={(e) => handleProfileUpdate('username', e.target.value)}
                 className={classNames(

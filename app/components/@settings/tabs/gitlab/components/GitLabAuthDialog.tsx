@@ -86,6 +86,7 @@ export function GitLabAuthDialog({ isOpen, onClose }: GitLabAuthDialogProps) {
                   </label>
                   <input
                     type="url"
+                    autoComplete="url"
                     spellCheck={false}
                     value={gitlabUrl}
                     onChange={(e) => setGitlabUrl(e.target.value)}
