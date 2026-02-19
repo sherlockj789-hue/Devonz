@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect, useRef } from 'react';
 import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
 import DOMPurify from 'dompurify';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import { classNames } from '~/utils/classNames';
 import {
   TOOL_EXECUTION_APPROVAL,
@@ -44,6 +47,60 @@ const jsonHighlighter: HighlighterGeneric<BundledLanguage, BundledTheme> =
 if (import.meta.hot) {
   import.meta.hot.data.jsonHighlighter = jsonHighlighter;
 }
+
+/**
+ * Extracts human-readable text content from an MCP tool result.
+ *
+ * MCP results follow the protocol format:
+ *   { content: [{ type: 'text', text: '...' }], isError: false, structuredContent: { result: '...' } }
+ *
+ * This function extracts the actual text, avoiding raw JSON display.
+ * Returns null if no readable text is found (pure structured data).
+ */
+export function extractMcpResultText(result: unknown): { text: string | null; isError: boolean } {
+  // String results (e.g. TOOL_EXECUTION_DENIED)
+  if (typeof result === 'string') {
+    return { text: result, isError: false };
+  }
+
+  if (typeof result !== 'object' || result === null) {
+    return { text: null, isError: false };
+  }
+
+  const obj = result as Record<string, unknown>;
+  const isError = obj.isError === true;
+
+  // MCP protocol: content[].text
+  if (Array.isArray(obj.content)) {
+    const textParts = (obj.content as Array<Record<string, unknown>>)
+      .filter((item) => item?.type === 'text' && typeof item?.text === 'string')
+      .map((item) => item.text as string);
+
+    if (textParts.length > 0) {
+      return { text: textParts.join('\n\n'), isError };
+    }
+  }
+
+  // structuredContent.result (string)
+  if (
+    typeof obj.structuredContent === 'object' &&
+    obj.structuredContent !== null &&
+    typeof (obj.structuredContent as Record<string, unknown>).result === 'string'
+  ) {
+    return { text: (obj.structuredContent as Record<string, unknown>).result as string, isError };
+  }
+
+  // Direct result field (string)
+  if (typeof obj.result === 'string') {
+    return { text: obj.result, isError };
+  }
+
+  // No text found — will fall through to raw JSON display
+  return { text: null, isError };
+}
+
+/** View mode for tool result display */
+type ResultViewMode = 'formatted' | 'raw';
 
 interface JsonCodeBlockProps {
   className?: string;
@@ -236,8 +293,34 @@ interface ToolResultItemProps {
 }
 
 /**
- * Individual tool result display with collapsible long JSON,
- * line count indicator, and copy-to-clipboard functionality.
+ * Formatted markdown renderer for extracted MCP tool result text.
+ * Lightweight — uses remarkGfm for tables/lists and rehypeSanitize for security.
+ */
+const FormattedResultContent = memo(({ text, theme }: { text: string; theme: Theme }) => {
+  return (
+    <div
+      className={classNames(
+        'prose prose-sm max-w-none',
+        theme === 'dark' ? 'prose-invert' : '',
+        'text-xs leading-relaxed',
+      )}
+      style={{
+        color: theme === 'dark' ? '#e5e7eb' : '#1f2937',
+      }}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+});
+
+/**
+ * Individual tool result display with:
+ * - Formatted markdown view (default when text content is extractable)
+ * - Raw JSON view toggle
+ * - Collapsible long outputs with line count
+ * - Copy-to-clipboard
  */
 const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -246,6 +329,20 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
   const [isOverflowing, setIsOverflowing] = useState(false);
 
   const { toolInvocation } = tool;
+
+  // Extract readable text from MCP result
+  const extracted = useMemo(() => {
+    if (toolInvocation.state !== 'result') {
+      return { text: null, isError: false };
+    }
+
+    return extractMcpResultText(toolInvocation.result);
+  }, [toolInvocation]);
+
+  const hasFormattedContent = extracted.text !== null && !extracted.isError;
+
+  // Default to formatted view when text is available, raw otherwise
+  const [viewMode, setViewMode] = useState<ResultViewMode>(hasFormattedContent ? 'formatted' : 'raw');
 
   const resultStr = useMemo(() => {
     if (toolInvocation.state !== 'result') {
@@ -261,13 +358,15 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
 
   const lineCount = useMemo(() => resultStr.split('\n').length, [resultStr]);
   const isLongResult = lineCount > RESULT_LINE_THRESHOLD;
+  const isFormattedLong = (extracted.text?.split('\n').length ?? 0) > RESULT_LINE_THRESHOLD;
 
   // Detect whether the result container overflows the collapsed max-height
   useEffect(() => {
-    if (resultContainerRef.current && isLongResult) {
-      setIsOverflowing(resultContainerRef.current.scrollHeight > RESULT_COLLAPSED_MAX_HEIGHT);
+    if (resultContainerRef.current) {
+      const needs = resultContainerRef.current.scrollHeight > RESULT_COLLAPSED_MAX_HEIGHT;
+      setIsOverflowing(needs);
     }
-  }, [resultStr, isLongResult]);
+  }, [resultStr, viewMode, isExpanded]);
 
   // Guard — parent already filters for results but keeps TS happy
   if (toolInvocation.state !== 'result') {
@@ -280,9 +379,12 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
     toolInvocation.result,
   );
 
+  const shouldCollapse = viewMode === 'raw' ? isLongResult : isFormattedLong;
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(resultStr);
+      const textToCopy = viewMode === 'formatted' && extracted.text ? extracted.text : resultStr;
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -324,12 +426,53 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
           <JsonCodeBlock className="mb-0" code={JSON.stringify(toolInvocation.args)} theme={theme} />
         </div>
 
-        {/* Result header with line count and copy button */}
+        {/* Result header with view toggle, line count, and copy button */}
         <div className="flex items-center justify-between mt-3 mb-1">
-          <div className="text-bolt-elements-textSecondary text-xs">
-            Result
-            {lineCount > 1 && <span className="ml-1.5 text-bolt-elements-textTertiary">({lineCount} lines)</span>}
+          <div className="flex items-center gap-2">
+            <div className="text-bolt-elements-textSecondary text-xs">
+              Result
+              {viewMode === 'raw' && lineCount > 1 && (
+                <span className="ml-1.5 text-bolt-elements-textTertiary">({lineCount} lines)</span>
+              )}
+            </div>
+
+            {/* View mode toggle — only show when formatted content is available */}
+            {hasFormattedContent && (
+              <div className="flex items-center rounded-md overflow-hidden border border-bolt-elements-borderColor">
+                <button
+                  onClick={() => {
+                    setViewMode('formatted');
+                    setIsExpanded(false);
+                  }}
+                  className={classNames(
+                    'px-2 py-0.5 text-xs transition-colors',
+                    viewMode === 'formatted'
+                      ? 'bg-accent-500/15 text-accent-500'
+                      : 'text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary',
+                  )}
+                  title="Show formatted content"
+                >
+                  <div className="i-ph:article" />
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode('raw');
+                    setIsExpanded(false);
+                  }}
+                  className={classNames(
+                    'px-2 py-0.5 text-xs transition-colors',
+                    viewMode === 'raw'
+                      ? 'bg-accent-500/15 text-accent-500'
+                      : 'text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary',
+                  )}
+                  title="Show raw JSON"
+                >
+                  <div className="i-ph:code" />
+                </button>
+              </div>
+            )}
           </div>
+
           <button
             onClick={handleCopy}
             className={classNames(
@@ -343,20 +486,24 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
           </button>
         </div>
 
-        {/* Result code block with collapse/expand for long outputs */}
+        {/* Result content with collapse/expand for long outputs */}
         <div className="bg-bolt-elements-bg-depth-1 p-3 rounded-md relative">
           <div
             ref={resultContainerRef}
             className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
             style={{
-              maxHeight: !isExpanded && isLongResult ? `${RESULT_COLLAPSED_MAX_HEIGHT}px` : 'none',
+              maxHeight: !isExpanded && shouldCollapse ? `${RESULT_COLLAPSED_MAX_HEIGHT}px` : 'none',
             }}
           >
-            <JsonCodeBlock className="mb-0" code={resultStr} theme={theme} />
+            {viewMode === 'formatted' && extracted.text ? (
+              <FormattedResultContent text={extracted.text} theme={theme} />
+            ) : (
+              <JsonCodeBlock className="mb-0" code={resultStr} theme={theme} />
+            )}
           </div>
 
           {/* Fade overlay when collapsed and content overflows */}
-          {isLongResult && !isExpanded && isOverflowing && (
+          {shouldCollapse && !isExpanded && isOverflowing && (
             <div
               className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none rounded-b-md"
               style={{
@@ -369,7 +516,7 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
           )}
 
           {/* Show more / Show less toggle */}
-          {isLongResult && (
+          {shouldCollapse && (
             <button
               onClick={() => setIsExpanded((prev) => !prev)}
               className="w-full mt-1 py-1 text-xs text-center text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary transition-colors"
@@ -382,7 +529,7 @@ const ToolResultItem = memo(({ tool, annotation, theme }: ToolResultItemProps) =
               ) : (
                 <span className="flex items-center justify-center gap-1">
                   <div className="i-ph:caret-down text-sm" />
-                  Show more ({lineCount} lines)
+                  Show more
                 </span>
               )}
             </button>
