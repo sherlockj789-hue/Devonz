@@ -728,10 +728,6 @@ export { Button } from './Button';
 
         // Should detect artifacts appropriately
         expect(enhancedCallbacks.onArtifactOpen.mock.calls.length).toBeGreaterThan(0);
-
-        console.log(`Performance: ${avgTimePerOp.toFixed(4)}ms per operation`);
-        console.log(`Artifacts detected: ${enhancedCallbacks.onArtifactOpen.mock.calls.length}`);
-        console.log(`Actions detected: ${enhancedCallbacks.onActionOpen.mock.calls.length}`);
       });
     });
   });

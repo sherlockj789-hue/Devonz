@@ -20,6 +20,8 @@ import { downloadFilesAsZip, syncFilesToDirectory } from '~/lib/utils/exportUtil
 
 const logger = createScopedLogger('WorkbenchStore');
 
+const ACTION_STREAM_SAMPLE_MS = 100;
+
 export interface ArtifactState {
   id: string;
   title: string;
@@ -490,6 +492,7 @@ export class WorkbenchStore {
 
   abortAllActions() {
     // TODO: what do we wanna do and how do we wanna recover from this?
+    logger.warn('abortAllActions called — no recovery strategy implemented yet');
   }
 
   setReloadedMessages(messages: string[]) {
@@ -706,7 +709,7 @@ export class WorkbenchStore {
 
   actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
     return await this._runAction(data, isStreaming);
-  }, 100); // TODO: remove this magic number to have it configurable
+  }, ACTION_STREAM_SAMPLE_MS);
 
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();
