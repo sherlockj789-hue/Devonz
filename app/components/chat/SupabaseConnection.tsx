@@ -94,6 +94,7 @@ export function SupabaseConnection() {
             height="20"
             width="20"
             crossOrigin="anonymous"
+            alt="Supabase"
             src="https://cdn.simpleicons.org/supabase"
           />
           {isConnected && supabaseConn.project && (
