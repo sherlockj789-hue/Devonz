@@ -381,7 +381,7 @@ export const CombinedModelSelector = ({
         <div
           className={classNames(
             'flex items-stretch rounded-full overflow-hidden cursor-pointer',
-            'border border-bolt-elements-borderColor',
+            'border border-white/8',
             'bg-[#1a2332]',
             'transition-all duration-200',
             'hover:border-[#4d6a8f]',
@@ -404,7 +404,7 @@ export const CombinedModelSelector = ({
             className={classNames(
               'flex items-center gap-2 px-4 py-2.5',
               'bg-[#0b0d13]',
-              'border-r border-bolt-elements-borderColor/50',
+              'border-r border-white/12',
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -413,7 +413,7 @@ export const CombinedModelSelector = ({
             }}
           >
             <span className="i-ph:cube-duotone text-[#6b8bb8] text-lg" />
-            <span className="text-sm font-medium text-bolt-elements-textPrimary">{provider?.name || 'Provider'}</span>
+            <span className="text-sm font-medium text-[#e6edf3]">{provider?.name || 'Provider'}</span>
           </div>
 
           {/* Model Section */}
@@ -427,7 +427,7 @@ export const CombinedModelSelector = ({
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="i-ph:brain-duotone text-[#6b8bb8] text-lg flex-shrink-0" />
-              <span className="text-sm text-bolt-elements-textPrimary truncate">
+              <span className="text-sm text-[#e6edf3] truncate">
                 {selectedModel?.label || 'Select model'}
               </span>
             </div>
@@ -435,7 +435,7 @@ export const CombinedModelSelector = ({
               {modelLoading && <div className="i-svg-spinners:90-ring-with-bg text-[#6b8bb8] text-sm animate-spin" />}
               <span
                 className={classNames(
-                  'i-ph:caret-down text-bolt-elements-textSecondary transition-transform duration-200',
+                  'i-ph:caret-down text-[#8b949e] transition-transform duration-200',
                   isDropdownOpen ? 'rotate-180' : '',
                 )}
               />
