@@ -147,6 +147,7 @@ export default function VercelConnection() {
               <input
                 type="password"
                 autoComplete="off"
+                spellCheck={false}
                 value={connection.token}
                 onChange={(e) => updateVercelConnection({ ...connection, token: e.target.value })}
                 disabled={connecting}

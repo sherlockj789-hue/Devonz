@@ -263,6 +263,7 @@ function InlineInput({ depth, placeholder, initialValue = '', onSubmit, onCancel
       <input
         ref={inputRef}
         type="text"
+        spellCheck={false}
         className="ml-2 flex-1 bg-transparent border-none outline-none py-0.5 text-sm text-bolt-elements-textPrimary placeholder:text-bolt-elements-textTertiary min-w-0"
         placeholder={placeholder}
         onKeyDown={handleKeyDown}

@@ -80,6 +80,7 @@ function ProviderCard({
                   {isEditing ? (
                     <input
                       type="text"
+                      spellCheck={false}
                       defaultValue={provider.settings.baseUrl}
                       placeholder={`Enter ${provider.name} base URL`}
                       className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200 shadow-sm"

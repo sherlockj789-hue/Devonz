@@ -200,6 +200,7 @@ export function VercelDomainModal({ isOpen, onClose, projectId: propProjectId, c
                       >
                         <input
                           type="text"
+                          spellCheck={false}
                           value={newSubdomain}
                           onChange={(e) => {
                             setNewSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));

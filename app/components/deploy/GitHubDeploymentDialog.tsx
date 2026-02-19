@@ -847,6 +847,7 @@ export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: 
                       <input
                         id="repoName"
                         type="text"
+                        spellCheck={false}
                         value={repoName}
                         onChange={(e) => {
                           const value = e.target.value;

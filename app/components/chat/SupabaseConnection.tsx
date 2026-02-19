@@ -125,6 +125,7 @@ export function SupabaseConnection() {
                   <input
                     type="password"
                     autoComplete="off"
+                    spellCheck={false}
                     value={supabaseConn.token}
                     onChange={(e) => updateToken(e.target.value)}
                     disabled={connecting}

@@ -86,6 +86,7 @@ export function GitLabAuthDialog({ isOpen, onClose }: GitLabAuthDialogProps) {
                   </label>
                   <input
                     type="url"
+                    spellCheck={false}
                     value={gitlabUrl}
                     onChange={(e) => setGitlabUrl(e.target.value)}
                     disabled={isConnecting}
@@ -109,6 +110,7 @@ export function GitLabAuthDialog({ isOpen, onClose }: GitLabAuthDialogProps) {
                   <input
                     type="password"
                     autoComplete="off"
+                    spellCheck={false}
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                     disabled={isConnecting}

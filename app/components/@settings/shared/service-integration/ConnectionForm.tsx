@@ -108,6 +108,7 @@ export function ConnectionForm({
                 <input
                   type="password"
                   autoComplete="off"
+                  spellCheck={false}
                   value={token}
                   onChange={(e) => onTokenChange(e.target.value)}
                   disabled={isConnecting}

@@ -546,6 +546,7 @@ export default function SupabaseTab() {
                                 <div className="flex items-center gap-2 mt-1">
                                   <input
                                     type="text"
+                                    spellCheck={false}
                                     value={connection.credentials.supabaseUrl || ''}
                                     readOnly
                                     className="flex-1 px-2 py-1 text-xs bg-bolt-elements-background border border-bolt-elements-borderColor rounded"
@@ -573,6 +574,7 @@ export default function SupabaseTab() {
                                   <input
                                     type="password"
                                     autoComplete="off"
+                                    spellCheck={false}
                                     value={connection.credentials.anonKey || ''}
                                     readOnly
                                     className="flex-1 px-2 py-1 text-xs bg-bolt-elements-background border border-bolt-elements-borderColor rounded"
@@ -724,6 +726,7 @@ export default function SupabaseTab() {
                 <input
                   type="password"
                   autoComplete="off"
+                  spellCheck={false}
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   disabled={connecting}

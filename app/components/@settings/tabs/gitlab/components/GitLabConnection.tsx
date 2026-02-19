@@ -101,6 +101,7 @@ export default function GitLabConnection({ connectionTest, onTestConnection }: G
               <label className="block text-sm text-bolt-elements-textSecondary mb-2">GitLab URL</label>
               <input
                 type="text"
+                spellCheck={false}
                 value={gitlabUrl}
                 onChange={(e) => setGitlabUrl(e.target.value)}
                 disabled={isConnecting || isConnected}
@@ -121,6 +122,7 @@ export default function GitLabConnection({ connectionTest, onTestConnection }: G
               <input
                 type="password"
                 autoComplete="off"
+                spellCheck={false}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 disabled={isConnecting || isConnected}

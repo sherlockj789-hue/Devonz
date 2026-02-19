@@ -602,6 +602,7 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
                       <input
                         id="repoName"
                         type="text"
+                        spellCheck={false}
                         value={repoName}
                         onChange={(e) => setRepoName(e.target.value)}
                         placeholder="my-awesome-project"

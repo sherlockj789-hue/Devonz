@@ -171,6 +171,7 @@ export default function McpTab() {
             </label>
             <textarea
               id="mcp-config"
+              spellCheck={false}
               value={mcpConfigText}
               onChange={(e) => setMCPConfigText(e.target.value)}
               className={classNames(

@@ -1324,6 +1324,7 @@ export default function NetlifyTab() {
                 <input
                   type="password"
                   autoComplete="off"
+                  spellCheck={false}
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="Enter your Netlify API token"

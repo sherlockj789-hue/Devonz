@@ -114,6 +114,7 @@ export function GitHubConnection({ connectionTest, onTestConnection }: GitHubCon
               <input
                 type="password"
                 autoComplete="off"
+                spellCheck={false}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 disabled={isConnecting || isConnected}

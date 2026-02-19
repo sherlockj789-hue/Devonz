@@ -334,6 +334,7 @@ export const InspectorPanel = memo(
                       )}
                       <input
                         type="text"
+                        spellCheck={false}
                         value={editedValue}
                         onChange={(e) => handleStyleChange(prop, e.target.value)}
                         className="flex-1 bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded px-2 py-1 text-bolt-elements-textPrimary font-mono text-xs focus:outline-none focus:border-accent-400"
