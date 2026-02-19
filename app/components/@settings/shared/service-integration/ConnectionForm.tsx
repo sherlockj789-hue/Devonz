@@ -77,6 +77,7 @@ export function ConnectionForm({
                     Token Type
                   </label>
                   <select
+                    aria-label="Token type"
                     value={selectedTokenType}
                     onChange={(e) => onTokenTypeChange(e.target.value)}
                     disabled={isConnecting}

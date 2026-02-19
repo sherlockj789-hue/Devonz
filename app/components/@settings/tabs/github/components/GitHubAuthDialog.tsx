@@ -75,6 +75,7 @@ export function GitHubAuthDialog({ isOpen, onClose, onSuccess }: GitHubAuthDialo
                 <div>
                   <label className="block text-sm text-bolt-elements-textSecondary mb-2">Token Type</label>
                   <select
+                    aria-label="Token type"
                     value={tokenType}
                     onChange={(e) => setTokenType(e.target.value as 'classic' | 'fine-grained')}
                     disabled={isConnecting}

@@ -222,6 +222,7 @@ export function GitHubRepositorySelector({ onClone, className }: GitHubRepositor
         <div className="flex items-center gap-2">
           <div className="i-ph:calendar size-4 text-bolt-elements-textTertiary" />
           <select
+            aria-label="Sort repositories"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="px-3 py-2 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary text-sm focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive"
@@ -237,6 +238,7 @@ export function GitHubRepositorySelector({ onClone, className }: GitHubRepositor
         <div className="flex items-center gap-2">
           <div className="i-ph:funnel size-4 text-bolt-elements-textTertiary" />
           <select
+            aria-label="Filter repositories"
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value as FilterOption)}
             className="px-3 py-2 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary text-sm focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive"

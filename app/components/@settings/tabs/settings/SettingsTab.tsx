@@ -89,6 +89,7 @@ export default function SettingsTab() {
             <label className="block text-sm text-bolt-elements-textSecondary">Language</label>
           </div>
           <select
+            aria-label="Language"
             value={settings.language}
             onChange={(e) => setSettings((prev) => ({ ...prev, language: e.target.value }))}
             className={classNames(
@@ -176,6 +177,7 @@ export default function SettingsTab() {
             <label className="block text-sm text-bolt-elements-textSecondary">Timezone</label>
           </div>
           <select
+            aria-label="Timezone"
             value={settings.timezone}
             onChange={(e) => setSettings((prev) => ({ ...prev, timezone: e.target.value }))}
             className={classNames(

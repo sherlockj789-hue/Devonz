@@ -389,6 +389,7 @@ export const CombinedModelSelector = ({
           )}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           role="combobox"
+          aria-label="Select AI model"
           aria-expanded={isDropdownOpen}
           aria-haspopup="listbox"
           tabIndex={0}
