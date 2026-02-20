@@ -326,6 +326,8 @@ Before reporting task completion, verify:
   - [ ] Every utility function used is explicitly imported (e.g., \`cn\` from \`@/lib/utils\`, \`clsx\` from \`clsx\`)
   - [ ] No undefined references — every function/component used is imported or defined in the file
   - [ ] All companion/peer dependencies listed in package.json (e.g., zustand+immer, react-hook-form+zod)
+  - [ ] LUCIDE ICONS: Every \`<IconName />\` in JSX has a matching \`import { IconName } from 'lucide-react'\` — scan ALL files for icon usage
+  - [ ] NO UI COMPONENTS FROM LUCIDE: Tooltip, Dialog, Sheet, Popover, Select, Accordion, etc. are imported from \`@/components/ui/\` — NEVER from \`lucide-react\`
   - [ ] Shell commands use SEPARATE devonz_run_command calls — NEVER chain with &&
   Completeness (CRITICAL):
   - [ ] No hardcoded mock data arrays — real state management with CRUD operations used

@@ -402,6 +402,23 @@ export const getFineTunedPrompt = (
     - For TypeScript/Vite projects, omit file extensions in imports (\`.ts\`, \`.tsx\`)
     - NEVER import from a path that doesn't match a file you're creating
 
+  LUCIDE ICON IMPORT RULES (CRITICAL — prevents "not defined" and wrong-source errors):
+    - EVERY Lucide icon component used in JSX MUST have an explicit import from 'lucide-react':
+      ✅ import { CloudSun, ArrowRight, Search, LayoutDashboard } from 'lucide-react';
+      ❌ Using <CloudSun /> in JSX without importing it → ReferenceError: CloudSun is not defined
+    - SCAN every component file: if JSX contains <IconName />, verify import { IconName } from 'lucide-react' exists at the top of that file
+    - IMPORT SOURCE DISTINCTION (CRITICAL): NEVER import UI component names from 'lucide-react'.
+      These names are shadcn/ui COMPONENTS (from @/components/ui/), NOT Lucide icons:
+      ❌ WRONG: import { Tooltip, Dialog, Sheet, Drawer, Popover, Select } from 'lucide-react'
+      ✅ RIGHT: import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+      ✅ RIGHT: import { Search, ArrowRight, CloudSun, Package } from 'lucide-react'
+      Commonly confused names that are UI COMPONENTS, not icons:
+        Tooltip, Dialog, Sheet, Drawer, Popover, Select, Accordion, Tabs,
+        Badge, Avatar, Calendar, Table, Separator, Progress, Slider, Switch, Toggle,
+        Command, DropdownMenu, AlertDialog, ContextMenu, HoverCard, Menubar,
+        NavigationMenu, RadioGroup, ScrollArea, Collapsible, Resizable
+      If a name could be either an icon or a UI component, import it from '@/components/ui/' — NOT from 'lucide-react'
+
   CRITICAL RULES - MANDATORY:
 
   BEFORE CREATING ARTIFACT, PLAN:
@@ -837,6 +854,8 @@ The todo app is running with local storage persistence.</assistant_response>
   [ ] Every utility function used in a file is explicitly imported (e.g., \`cn\` from \`@/lib/utils\`, \`clsx\` from \`clsx\`)
   [ ] No undefined references — if a function/component is used, it MUST be imported or defined in that file
   [ ] All companion/peer dependencies listed in package.json (e.g., zustand+immer, react-hook-form+zod)
+  [ ] LUCIDE ICONS: Every \`<IconName />\` in JSX has a matching \`import { IconName } from 'lucide-react'\` — scan ALL files for icon usage
+  [ ] NO UI COMPONENTS FROM LUCIDE: Tooltip, Dialog, Sheet, Popover, Select, Accordion, etc. are imported from \`@/components/ui/\` — NEVER from \`lucide-react\`
   
   Artifact Completeness:
   [ ] All referenced files are included in the artifact
