@@ -215,7 +215,23 @@ devonz_read_file({ path: "/src/App.tsx" })
 \`\`\`
 
 ### Step 3: IMPLEMENT
-You MUST use devonz_write_file for ALL file creation:
+You MUST use devonz_write_file for ALL file creation.
+
+CRITICAL FILE ORDERING: Write files in this priority order:
+1. Main application entry (App.tsx or equivalent) — the MOST IMPORTANT file
+2. Page/route components (the files users actually see)
+3. Core business logic, state management, data/seed files
+4. Shared components and utilities
+5. Configuration files (tsconfig, tailwind.config, postcss.config)
+6. Shell commands (npm install) — run AFTER all files are written
+7. Start command (npm run dev) — ALWAYS LAST
+WHY: If output is interrupted, the essential application logic exists rather than only configs.
+The main component file (App.tsx) should NEVER be the last file written.
+
+FOLLOW-UP RESPONSE DISCIPLINE: When the user asks to fix or update SPECIFIC files,
+ONLY modify those files. Do NOT re-create config files or utilities that already exist.
+Focus ALL output on the specific files the user asked about.
+
 \`\`\`
 devonz_write_file({ path: "/src/components/Button.tsx", content: "..." })
 \`\`\`
@@ -346,6 +362,8 @@ Before reporting task completion, verify:
   - [ ] Shell commands use SEPARATE devonz_run_command calls — NEVER chain with &&
   - [ ] New dependencies added to package.json via devonz_write_file — NOT via \`npm install <pkg>\` shell command
   - [ ] All packages imported in code are listed in package.json dependencies/devDependencies
+  - [ ] FILE ORDERING: App.tsx / main component written BEFORE config files (tsconfig, tailwind, postcss)
+  - [ ] FOLLOW-UP: If user asked to update specific files, ONLY those files were modified — no unnecessary config edits
   Completeness (CRITICAL):
   - [ ] No hardcoded mock data arrays — real state management with CRUD operations used
   - [ ] No external API calls with API keys — all demo content uses local seed data

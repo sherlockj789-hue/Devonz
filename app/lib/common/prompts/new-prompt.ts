@@ -485,14 +485,30 @@ export const getFineTunedPrompt = (
   Action Order:
     - Create files BEFORE shell commands that depend on them
     - Update package.json FIRST, then install dependencies
-    - Configuration files before initialization commands
-    - Start command LAST
+    - CRITICAL FILE ORDERING: After package.json, write files in this priority order:
+      1. Main application entry (App.tsx or equivalent) — the MOST IMPORTANT file
+      2. Page/route components (the files users actually see)
+      3. Core business logic, state management, data/seed files
+      4. Shared components and utilities
+      5. Configuration files (tsconfig, tailwind.config, postcss.config)
+      6. Shell commands (npm install)
+      7. Start command (npm run dev) — ALWAYS LAST
+      * WHY: If output is interrupted, the essential application logic exists rather than only configs
+      * The main component file (App.tsx) should NEVER be the last file in the artifact
     - CRITICAL: EVERY project MUST end with <boltAction type="start">npm run dev</boltAction> - never tell user to run manually
 
   Dependencies:
     - Update package.json with ALL dependencies upfront
     - Run single install command
     - Avoid individual package installations
+
+  FOLLOW-UP RESPONSE DISCIPLINE (CRITICAL):
+    - When the user asks to fix or update SPECIFIC files, ONLY modify those files
+    - Do NOT re-create or re-edit config files (package.json, tsconfig.json, vite.config.ts, postcss.config.js, tailwind.config.js) unless the user specifically requested changes to them
+    - Do NOT re-create utility files, types, or seed data that already exist and work correctly
+    - Focus ALL output on the specific files the user asked about
+    - If the user says "only update App.tsx", then ONLY include a single boltAction for App.tsx — no other files
+    - NEVER waste tokens rewriting files that don't need changes
 </artifact_instructions>
 
 <design_instructions>
@@ -908,6 +924,8 @@ The todo app is running with local storage persistence.</assistant_response>
   [ ] Each shell command is in its OWN boltAction — NEVER chain with && (jsh does not support it)
   [ ] New dependencies added to package.json via file action — NOT via \`npm install <pkg>\` shell command
   [ ] All packages imported in code are listed in package.json dependencies/devDependencies
+  [ ] FILE ORDERING: App.tsx / main component written BEFORE config files (tsconfig, tailwind, postcss)
+  [ ] FOLLOW-UP: If user asked to update specific files, ONLY those files are in the artifact — no unnecessary config edits
   
   Performance & Accessibility:
   [ ] Images have \`loading="lazy"\` or \`fetchpriority="high"\` as appropriate
