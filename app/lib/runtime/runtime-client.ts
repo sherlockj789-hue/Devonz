@@ -388,6 +388,55 @@ export class RuntimeClient implements RuntimeProvider {
     // Open SSE connection for this session's output
     const eventSource = new EventSource(`/api/runtime/terminal?op=stream&sessionId=${encodeURIComponent(sessionId)}`);
 
+    /*
+     * Wait for the SSE connection to be fully established before returning.
+     * The server sends a `{ type: 'connected' }` handshake once the
+     * data listener is added to the session's dataListeners array.
+     * Without this, writes can race ahead of the SSE listener setup,
+     * causing shell readiness markers to be lost on page refresh.
+     */
+    const sseReady = new Promise<void>((resolve) => {
+      const SSE_CONNECT_TIMEOUT_MS = 10_000;
+      let settled = false;
+
+      const settle = () => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve();
+        }
+      };
+
+      const timer = setTimeout(() => {
+        logger.warn(`SSE connect timeout for session ${sessionId}, proceeding anyway`);
+        settle();
+      }, SSE_CONNECT_TIMEOUT_MS);
+
+      // Resolve on the 'connected' handshake from the server
+      const onConnect = (event: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(event.data);
+
+          if (parsed.type === 'connected') {
+            eventSource.removeEventListener('message', onConnect);
+            settle();
+          }
+        } catch {
+          // Not JSON — ignore
+        }
+      };
+
+      eventSource.addEventListener('message', onConnect);
+
+      // If the SSE errors out before connecting, don't block forever
+      eventSource.addEventListener('error', () => {
+        if (eventSource.readyState === EventSource.CLOSED) {
+          logger.warn(`SSE failed to connect for session ${sessionId}`);
+          settle();
+        }
+      });
+    });
+
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
@@ -413,6 +462,9 @@ export class RuntimeClient implements RuntimeProvider {
     };
 
     this.#activeSessions.set(sessionId, { eventSource, dataListeners });
+
+    // Wait for SSE handshake before allowing writes
+    await sseReady;
 
     const exitPromise = new Promise<number>((resolve) => {
       let resolved = false;
