@@ -364,12 +364,15 @@ function injectShadcnPeerDeps(files: Array<{ name: string; path: string; content
 }
 
 /**
- * Inject only the common extra packages (framer-motion, lucide-react, etc.)
- * into a non-shadcn React-family template's package.json. This prevents
- * auto-fix loops when the LLM imports popular libraries that aren't in
- * the template's dependency list.
+ * Generic package injector — adds missing packages from a given record
+ * into a template's package.json dependencies. Used by all framework-specific
+ * injection calls to prevent auto-fix loops caused by missing dependencies.
  */
-function injectCommonPackages(files: Array<{ name: string; path: string; content: string }>): void {
+function injectPackages(
+  files: Array<{ name: string; path: string; content: string }>,
+  packages: Record<string, string>,
+  label: string,
+): void {
   const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
 
   if (!pkgJsonFile) {
@@ -383,7 +386,7 @@ function injectCommonPackages(files: Array<{ name: string; path: string; content
     const allExistingDeps = { ...deps, ...devDeps };
     let injectedCount = 0;
 
-    for (const [pkg, version] of Object.entries(COMMON_EXTRA_PACKAGES)) {
+    for (const [pkg, version] of Object.entries(packages)) {
       if (!allExistingDeps[pkg] && !deps[pkg]) {
         deps[pkg] = version;
         injectedCount++;
@@ -393,183 +396,10 @@ function injectCommonPackages(files: Array<{ name: string; path: string; content
     if (injectedCount > 0) {
       pkgJson.dependencies = deps;
       pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} common packages into template package.json`);
+      logger.info(`Injected ${injectedCount} ${label} packages into template package.json`);
     }
   } catch (error) {
-    logger.error('Failed to inject common packages:', error);
-  }
-}
-
-/**
- * Inject Vue-specific + universal packages into Vue-family templates.
- * Adds pinia, @vueuse/core, date-fns, axios, zod.
- */
-function injectVuePackages(files: Array<{ name: string; path: string; content: string }>): void {
-  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
-
-  if (!pkgJsonFile) {
-    return;
-  }
-
-  try {
-    const pkgJson = JSON.parse(pkgJsonFile.content);
-    const deps = pkgJson.dependencies || {};
-    const devDeps = pkgJson.devDependencies || {};
-    const allExistingDeps = { ...deps, ...devDeps };
-    let injectedCount = 0;
-
-    for (const [pkg, version] of Object.entries(VUE_COMBINED_PACKAGES)) {
-      if (!allExistingDeps[pkg] && !deps[pkg]) {
-        deps[pkg] = version;
-        injectedCount++;
-      }
-    }
-
-    if (injectedCount > 0) {
-      pkgJson.dependencies = deps;
-      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} Vue + universal packages into template package.json`);
-    }
-  } catch (error) {
-    logger.error('Failed to inject Vue packages:', error);
-  }
-}
-
-/**
- * Inject only framework-agnostic universal packages (date-fns, axios, zod)
- * into non-React JSX templates like SolidJS and Qwik. Avoids adding
- * React-specific dependencies that would be unused and confusing.
- */
-function injectUniversalPackages(files: Array<{ name: string; path: string; content: string }>): void {
-  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
-
-  if (!pkgJsonFile) {
-    return;
-  }
-
-  try {
-    const pkgJson = JSON.parse(pkgJsonFile.content);
-    const deps = pkgJson.dependencies || {};
-    const devDeps = pkgJson.devDependencies || {};
-    const allExistingDeps = { ...deps, ...devDeps };
-    let injectedCount = 0;
-
-    for (const [pkg, version] of Object.entries(UNIVERSAL_EXTRA_PACKAGES)) {
-      if (!allExistingDeps[pkg] && !deps[pkg]) {
-        deps[pkg] = version;
-        injectedCount++;
-      }
-    }
-
-    if (injectedCount > 0) {
-      pkgJson.dependencies = deps;
-      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} universal packages into template package.json`);
-    }
-  } catch (error) {
-    logger.error('Failed to inject universal packages:', error);
-  }
-}
-
-/**
- * Inject Svelte-specific + universal packages into SvelteKit templates.
- */
-function injectSveltePackages(files: Array<{ name: string; path: string; content: string }>): void {
-  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
-
-  if (!pkgJsonFile) {
-    return;
-  }
-
-  try {
-    const pkgJson = JSON.parse(pkgJsonFile.content);
-    const deps = pkgJson.dependencies || {};
-    const devDeps = pkgJson.devDependencies || {};
-    const allExistingDeps = { ...deps, ...devDeps };
-    let injectedCount = 0;
-
-    for (const [pkg, version] of Object.entries(SVELTE_COMBINED_PACKAGES)) {
-      if (!allExistingDeps[pkg] && !deps[pkg]) {
-        deps[pkg] = version;
-        injectedCount++;
-      }
-    }
-
-    if (injectedCount > 0) {
-      pkgJson.dependencies = deps;
-      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} Svelte + universal packages into template package.json`);
-    }
-  } catch (error) {
-    logger.error('Failed to inject Svelte packages:', error);
-  }
-}
-
-/**
- * Inject Angular-specific + universal packages into Angular templates.
- */
-function injectAngularPackages(files: Array<{ name: string; path: string; content: string }>): void {
-  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
-
-  if (!pkgJsonFile) {
-    return;
-  }
-
-  try {
-    const pkgJson = JSON.parse(pkgJsonFile.content);
-    const deps = pkgJson.dependencies || {};
-    const devDeps = pkgJson.devDependencies || {};
-    const allExistingDeps = { ...deps, ...devDeps };
-    let injectedCount = 0;
-
-    for (const [pkg, version] of Object.entries(ANGULAR_COMBINED_PACKAGES)) {
-      if (!allExistingDeps[pkg] && !deps[pkg]) {
-        deps[pkg] = version;
-        injectedCount++;
-      }
-    }
-
-    if (injectedCount > 0) {
-      pkgJson.dependencies = deps;
-      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} Angular + universal packages into template package.json`);
-    }
-  } catch (error) {
-    logger.error('Failed to inject Angular packages:', error);
-  }
-}
-
-/**
- * Inject SolidJS-specific + universal packages into SolidJS templates.
- */
-function injectSolidPackages(files: Array<{ name: string; path: string; content: string }>): void {
-  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
-
-  if (!pkgJsonFile) {
-    return;
-  }
-
-  try {
-    const pkgJson = JSON.parse(pkgJsonFile.content);
-    const deps = pkgJson.dependencies || {};
-    const devDeps = pkgJson.devDependencies || {};
-    const allExistingDeps = { ...deps, ...devDeps };
-    let injectedCount = 0;
-
-    for (const [pkg, version] of Object.entries(SOLIDJS_COMBINED_PACKAGES)) {
-      if (!allExistingDeps[pkg] && !deps[pkg]) {
-        deps[pkg] = version;
-        injectedCount++;
-      }
-    }
-
-    if (injectedCount > 0) {
-      pkgJson.dependencies = deps;
-      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
-      logger.info(`Injected ${injectedCount} SolidJS + universal packages into template package.json`);
-    }
-  } catch (error) {
-    logger.error('Failed to inject SolidJS packages:', error);
+    logger.error(`Failed to inject ${label} packages:`, error);
   }
 }
 
@@ -834,21 +664,21 @@ export async function getTemplates(templateName: string, title?: string) {
   if (resolvedName.toLowerCase().includes('shadcn')) {
     injectShadcnPeerDeps(files);
   } else if (isReactFamily(resolvedName)) {
-    injectCommonPackages(files);
+    injectPackages(files, COMMON_EXTRA_PACKAGES, 'common');
   } else if (isVueFamily(resolvedName)) {
-    injectVuePackages(files);
+    injectPackages(files, VUE_COMBINED_PACKAGES, 'Vue + universal');
   } else if (isSvelteFamily(resolvedName)) {
-    injectSveltePackages(files);
+    injectPackages(files, SVELTE_COMBINED_PACKAGES, 'Svelte + universal');
   } else if (isAngularFamily(resolvedName)) {
-    injectAngularPackages(files);
+    injectPackages(files, ANGULAR_COMBINED_PACKAGES, 'Angular + universal');
   } else if (isSolidFamily(resolvedName)) {
-    injectSolidPackages(files);
+    injectPackages(files, SOLIDJS_COMBINED_PACKAGES, 'SolidJS + universal');
   } else {
     /*
      * All other templates (Astro, Qwik, Slidev, etc.)
      * get framework-agnostic universal packages (date-fns, axios, zod)
      */
-    injectUniversalPackages(files);
+    injectPackages(files, UNIVERSAL_EXTRA_PACKAGES, 'universal');
   }
 
   let filteredFiles = files;
