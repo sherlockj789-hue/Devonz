@@ -151,8 +151,19 @@ Validated with Zod. Returns a data stream with:
 | `/` | `_index.tsx` | Landing page with chat interface |
 | `/chat/:id` | `chat.$id.tsx` | Chat page with specific conversation loaded |
 | `/git` | `git.tsx` | Git URL import page |
-| `/webcontainer/connect/:id` | `webcontainer.connect.$id.tsx` | WebContainer connection setup |
-| `/webcontainer/preview/:id` | `webcontainer.preview.$id.tsx` | WebContainer preview iframe with error capture |
+
+---
+
+## Runtime
+
+Server-side local runtime for code execution, file I/O, and shell management. `LocalRuntime` runs on the server; `RuntimeClient` in the browser communicates with it via these routes.
+
+| Endpoint | Method | Purpose |
+| -------- | ------ | ------- |
+| `/api/runtime/boot` | POST | Initialize a project runtime (`bootRuntime(projectId)`). Creates project directory at `~/.devonz/projects/{projectId}/` |
+| `/api/runtime/fs` | GET | File system operations — query param `op`: `readFile`, `writeFile`, `readdir`, `mkdir`, `rm`, `watch` |
+| `/api/runtime/terminal` | POST | Shell session management — create, write, kill, list, resize. Uses Git Bash on Windows, system shell otherwise |
+| `/api/runtime/exec` | GET | Process execution and port event SSE — query param `op`: `spawn`, `portEvents`. Port detection strips ANSI codes, fires `PortEvent` → SSE → `RuntimeClient` → `PreviewsStore` → iframe at `http://localhost:PORT` |
 
 ---
 

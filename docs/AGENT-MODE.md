@@ -6,7 +6,7 @@
 
 ## Overview
 
-Agent Mode enables Devonz to act as an **autonomous coding agent**. Instead of generating code artifacts in the chat, the LLM uses structured **tool calls** to directly read, write, and execute code in the WebContainer. This enables multi-step, iterative development with error detection and self-correction.
+Agent Mode enables Devonz to act as an **autonomous coding agent**. Instead of generating code artifacts in the chat, the LLM uses structured **tool calls** to directly read, write, and execute code via the LocalRuntime on the host machine. This enables multi-step, iterative development with error detection and self-correction.
 
 ---
 
@@ -44,8 +44,10 @@ Agent Mode enables Devonz to act as an **autonomous coding agent**. Instead of g
           └────────────┬────────────┘
                        │
           ┌────────────▼────────────┐
-          │     WebContainer        │
+          │     LocalRuntime        │
           │  (File I/O, Shell)      │
+          │  Executes on host via   │
+          │  /api/runtime/* routes  │
           └─────────────────────────┘
 ```
 
@@ -240,7 +242,7 @@ When agent mode is active, the standard system prompt is **replaced** with a sin
 The prompt covers:
 
 1. Instructs the LLM to use `devonz_*` tools instead of artifact XML tags
-2. Defines WebContainer constraints (no native binaries, no git, etc.)
+2. Defines LocalRuntime capabilities and constraints (native binaries ARE supported, git IS available; projects are sandboxed to `~/.devonz/projects/{projectId}/`)
 3. Establishes a tool selection hierarchy (prefer `write_file` over shell commands)
 4. Forbids outputting file content in plain text (must use tools)
 5. **Mobile-first design mandate** — all UI must be responsive and mobile-first

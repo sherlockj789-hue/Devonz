@@ -33,9 +33,9 @@ All stores live in `app/lib/stores/`. Each file exports one or more stores.
 | `workbench.ts` | Class (`WorkbenchStore`) | Main orchestrator — artifacts, file ops, views, alerts (1033 lines) |
 | `chat.ts` | `map` | Chat state: started, aborted, showChat, pendingMessage |
 | `editor.ts` | Class (`EditorStore`) | Selected file, scroll position, document map |
-| `files.ts` | Class (`FilesStore`) | File system state (FileMap), file operations via WebContainer |
-| `terminal.ts` | Class (`TerminalStore`) | Terminal instances, WebContainer shell management |
-| `previews.ts` | Class (`PreviewsStore`) | Preview URLs from WebContainer dev server |
+| `files.ts` | Class (`FilesStore`) | File system state (FileMap), file operations via RuntimeClient → LocalRuntime |
+| `terminal.ts` | Class (`TerminalStore`) | Terminal instances, shell management via RuntimeClient (Git Bash on Windows, system shell otherwise) |
+| `previews.ts` | Class (`PreviewsStore`) | Preview URLs from localhost dev server (port detected by LocalRuntime) |
 | `settings.ts` | `map` + atoms | User preferences, shortcuts, provider settings |
 | `theme.ts` | `atom` | Current theme (`'dark'` or `'light'`) |
 | `sidebar.ts` | `atom`/`map` | Sidebar visibility and state |
@@ -118,10 +118,10 @@ import { atom, map } from 'nanostores';
 
 export class WorkbenchStore {
   // Compose sub-stores
-  #filesStore = new FilesStore(webcontainer);
+  #filesStore = new FilesStore(runtimeClient);
   #editorStore = new EditorStore(this.#filesStore);
-  #terminalStore = new TerminalStore(webcontainer);
-  #previewsStore = new PreviewsStore(webcontainer);
+  #terminalStore = new TerminalStore(runtimeClient);
+  #previewsStore = new PreviewsStore(runtimeClient);
 
   // Public reactive atoms
   showWorkbench = atom(false);
@@ -178,7 +178,7 @@ All hooks live in `app/lib/hooks/`. They often wrap store access or provide data
 | `useGitHubConnection` | GitHub auth state |
 | `useGitLabAPI` | GitLab API interactions |
 | `useGitLabConnection` | GitLab auth state |
-| `useConnectionStatus` | WebContainer connection monitoring |
+| `useConnectionStatus` | Runtime connection monitoring |
 | `useConnectionTest` | Provider connection testing |
 | `useDataOperations` | Data import/export |
 | `useEditChatDescription` | In-place chat title editing |
@@ -193,7 +193,7 @@ All hooks live in `app/lib/hooks/`. They often wrap store access or provide data
 | `useSupabaseConnection` | Supabase connection state |
 | `useViewport` | Responsive breakpoint detection |
 | `useVersionCheck` | Polls `/api/version-check` to detect available updates, drives `UpdateBanner` |
-| `usePlanSync` | Syncs PLAN.md file changes from WebContainer into the plan store, preserving user approval state |
+| `usePlanSync` | Syncs PLAN.md file changes from LocalRuntime via RuntimeClient into the plan store, preserving user approval state |
 
 ---
 

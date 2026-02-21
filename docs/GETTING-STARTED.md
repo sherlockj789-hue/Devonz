@@ -269,12 +269,15 @@ devonz.diy/
 
 Chrome version 129 has a known issue with Vite's JavaScript modules in dev mode. The app detects this and shows a warning. Use Chrome Canary or another browser for development, or use the production build (`pnpm preview`).
 
-### WebContainer Initialization
+### Local Runtime
 
-WebContainer API requires specific browser features. If the preview/terminal doesn't load:
-- Ensure you're using a Chromium-based browser
-- SharedArrayBuffer must be available (requires cross-origin isolation headers in production)
-- Service Workers must be enabled
+Devonz uses a Local Runtime that executes code on the host machine (not in the browser). If the preview or terminal doesn't load:
+
+- Ensure **Node.js 18+** is installed on the host
+- On Windows, **Git Bash** must be available (installed with Git for Windows) — it is the preferred shell
+- The projects directory (`~/.devonz/projects/`) must be writable
+- **Port conflicts**: the dev server may bind to ports 5173+. Kill orphan Node processes if a port is already in use
+- No SharedArrayBuffer, COOP/COEP, or Service Worker requirements — those were WebContainer-only constraints
 
 ### Missing Dependencies
 

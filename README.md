@@ -44,7 +44,7 @@ pnpm run dev
 ## Why Devonz?
 
 - **22 AI providers** — OpenAI, Anthropic, Google, Groq, Z.ai, Ollama, and more. Swap models mid-conversation.
-- **Full dev environment in the browser** — editor, terminal, live preview, all powered by WebContainers.
+- **Full dev environment** — editor, terminal, live preview, powered by a local Node.js runtime.
 - **One-click deploy** — push to GitHub, GitLab, Netlify, or Vercel directly from the UI.
 - **MCP tools** — extend the agent with Model Context Protocol servers for specialized workflows.
 - **Auto-fix** — terminal error detection catches failures and patches them automatically.
@@ -266,7 +266,7 @@ bolt.diy/
 
 ## Tech Stack
 
-**Remix** + **Vite** + **TypeScript** · **UnoCSS** · **Radix UI** · **Framer Motion** · **Vercel AI SDK** · **CodeMirror** · **xterm.js** · **WebContainers**
+**Remix** + **Vite** + **TypeScript** · **UnoCSS** · **Radix UI** · **Framer Motion** · **Vercel AI SDK** · **CodeMirror** · **xterm.js** · **Local Runtime (host Node.js)**
 
 ---
 
@@ -285,7 +285,7 @@ See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for detailed guidelines.
 ## Acknowledgments
 
 - [bolt.diy](https://github.com/stackblitz-labs/bolt.diy) — original project foundation
-- [StackBlitz WebContainers](https://webcontainers.io/) — in-browser dev environment
+- Originally based on [StackBlitz bolt.new](https://github.com/stackblitz-labs/bolt.diy). Now uses a local Node.js runtime for code execution.
 - [Vercel AI SDK](https://sdk.vercel.ai/) — AI capabilities
 
 ---

@@ -20,8 +20,8 @@
 │  └─────────────────────┬──────────────────────────────┘  │
 │                        │                                 │
 │  ┌─────────────────────▼──────────────────────────────┐  │
-│  │           WebContainer (In-Browser Node.js)         │  │
-│  │        File system · Shell · Dev server             │  │
+│  │         RuntimeClient (Browser ↔ Server Bridge)     │  │
+│  │   Communicates via /api/runtime/* Remix routes       │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
 └──────────────────────────┬───────────────────────────────┘
@@ -32,6 +32,12 @@
 │  │  LLM Stream  │  │  MCP Service │  │  Git/Deploy    │  │
 │  │  (AI SDK)    │  │  (Tools)     │  │  Proxies       │  │
 │  └──────┬───────┘  └──────┬───────┘  └───────┬────────┘  │
+│         │                 │                  │           │
+│  ┌──────▼─────────────────▼──────────────────▼────────┐  │
+│  │          LocalRuntime (Server-Side Execution)       │  │
+│  │   File I/O · Shell (Git Bash / system) · Dev server │  │
+│  │   Projects at ~/.devonz/projects/{projectId}/       │  │
+│  └────────────────────────────────────────────────────┘  │
 │         │                 │                  │           │
 │  ┌──────▼─────────────────▼──────────────────▼────────┐  │
 │  │            External APIs (LLM Providers)            │  │
@@ -91,7 +97,10 @@ Handles LLM response parsing and action execution:
 | ---- | ------- |
 | `message-parser.ts` | Parses LLM streaming output into structured actions (file writes, shell commands) |
 | `enhanced-message-parser.ts` | Extended parser that auto-wraps untagged code blocks and shell commands into action tags |
-| `action-runner.ts` | Executes parsed actions against WebContainer (create files, run commands) |
+| `action-runner.ts` | Executes parsed actions via LocalRuntime (create files, run commands) |
+| `local-runtime.ts` | Server-side runtime managing code execution, file I/O, shell commands, and port detection |
+| `runtime-client.ts` | Browser-side client communicating with LocalRuntime via `/api/runtime/*` routes |
+| `runtime-provider.ts` | React context provider for runtime initialization and access |
 
 ### 6. Persistence Layer (`app/lib/persistence/`)
 
@@ -143,8 +152,8 @@ User types message
   Client receives stream
        │
        ├── MessageParser processes chunks
-       ├── ActionRunner executes file writes in WebContainer
-       ├── ActionRunner executes shell commands in WebContainer
+       ├── ActionRunner executes file writes via LocalRuntime (server-side)
+       ├── ActionRunner executes shell commands via LocalRuntime (server-side)
        └── UI updates (Messages, Editor, Preview)
 ```
 
@@ -192,7 +201,7 @@ User enables Agent Mode + sends task
 
 ## Key Design Decisions
 
-1. **WebContainer for execution**: Code runs in-browser via WebContainer API — no server-side sandboxing needed. This enables real file systems, package installation, and dev servers entirely client-side.
+1. **LocalRuntime for execution**: Code runs on the host machine via `LocalRuntime` (server-side). `RuntimeClient` (browser-side) communicates with it through `/api/runtime/*` Remix routes. `bootRuntime(projectId)` initializes a project runtime with files stored at `~/.devonz/projects/{projectId}/`. Supports native binaries, real Git, and full shell access (Git Bash preferred on Windows). Port detection uses ANSI-stripped regex matching, firing events via SSE to `PreviewsStore` for iframe preview at `http://localhost:PORT`. COEP/COOP headers have been removed (they were WebContainer-only); CSP `frame-src` allows localhost.
 
 2. **Nanostores over Redux/Context**: Lightweight atomic stores avoid the boilerplate of Redux while supporting cross-component reactivity without prop drilling.
 

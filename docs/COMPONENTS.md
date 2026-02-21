@@ -56,7 +56,7 @@ The code editing, file management, terminal, and preview environment.
 | --------- | ------- |
 | `Workbench.client.tsx` | Main workbench container with panel layout |
 | `EditorPanel.tsx` | Code editor panel with CodeMirror |
-| `Preview.tsx` | Live preview iframe from WebContainer |
+| `Preview.tsx` | Live preview iframe loading `http://localhost:PORT` from dev server started by LocalRuntime |
 | `FileTree.tsx` | File explorer tree |
 | `FileBreadcrumb.tsx` | Breadcrumb navigation for open file |
 | `Search.tsx` | File search |

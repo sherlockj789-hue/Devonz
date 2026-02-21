@@ -1,6 +1,6 @@
 # Devonz Documentation
 
-> AI-powered browser-based coding assistant built with Remix, React, and WebContainer API.
+> AI-powered browser-based coding assistant built with Remix, React, and a local Node.js runtime.
 
 ---
 
@@ -47,7 +47,7 @@
 | AI/LLM | Vercel AI SDK (22 providers) |
 | Editor | CodeMirror 6 |
 | Terminal | xterm.js 5.5 |
-| Runtime | WebContainer API |
+| Runtime | LocalRuntime (host Node.js) |
 | Testing | Vitest + Testing Library |
 | Package Manager | pnpm 9.14 |
 

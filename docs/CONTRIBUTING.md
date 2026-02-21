@@ -84,7 +84,7 @@ The `~/` alias maps to `app/` and is configured in both `tsconfig.json` and Vite
 Use the `.client.tsx` suffix for components that depend on browser APIs.
 
 ```typescript
-// Workbench.client.tsx — uses WebContainer, browser-only APIs
+// Workbench.client.tsx — uses RuntimeClient, browser-only APIs
 export default function Workbench() { /* ... */ }
 ```
 
