@@ -39,6 +39,8 @@ const viteReact: InlineFile[] = [
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.0"
   }
@@ -65,10 +67,11 @@ const viteReact: InlineFile[] = [
     'vite.config.ts',
     `import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -124,13 +127,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   ),
   f(
     'src/App.tsx',
-    `import './App.css';
-
-function App() {
+    `function App() {
   return (
-    <div className="app">
-      <h1>Vite + React</h1>
-      <p>Edit src/App.tsx and save to see changes.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-900">Vite + React</h1>
+        <p className="mt-2 text-gray-600">Edit src/App.tsx and save to see changes.</p>
+      </div>
     </div>
   );
 }
@@ -139,28 +142,8 @@ export default App;
 `,
   ),
   f(
-    'src/App.css',
-    `.app {
-  text-align: center;
-  padding: 2rem;
-}
-`,
-  ),
-  f(
     'src/index.css',
-    `:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #213547;
-  background-color: #ffffff;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
+    `@import "tailwindcss";
 `,
   ),
 ];

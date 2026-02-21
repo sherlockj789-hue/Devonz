@@ -750,28 +750,9 @@ ${templatePromptFile.content}
     userMessage =
       userMessage +
       `
-STRICT FILE ACCESS RULES - READ CAREFULLY:
-
-The following files are READ-ONLY and must never be modified:
+READ-ONLY FILES — do NOT modify, delete, rename, or recreate these:
 ${filesToImport.ignoreFile.map((file) => `- ${file.path}`).join('\n')}
-
-Permitted actions:
-✓ Import these files as dependencies
-✓ Read from these files
-✓ Reference these files
-
-Strictly forbidden actions:
-❌ Modify any content within these files
-❌ Delete these files
-❌ Rename these files
-❌ Move these files
-❌ Create new versions of these files
-❌ Suggest changes to these files
-
-Any attempt to modify these protected files will result in immediate termination of the operation.
-
-If you need to make changes to functionality, create new files instead of modifying the protected ones listed above.
----
+You may import/read/reference them. If changes are needed, create new files instead.
 `;
   }
 
@@ -879,14 +860,13 @@ FRAMEWORK: SolidJS — Use createSignal(), createEffect(), createMemo(), JSX (lo
 
   userMessage += `
 RULES:
-1. MODIFY existing files — do NOT recreate config/entry files (vite.config, tsconfig, tailwind.config, package.json).
-2. Follow the existing directory structure. Place new components in the components directory.
-3. USE pre-installed packages. Do NOT install alternatives (e.g., use lucide-react not heroicons).
-4. Keep the template's styling approach intact — do not switch CSS frameworks.
-5. Build a COMPLETE working application — no placeholders, stubs, or "coming soon" pages.
-6. Only run npm install if adding NEW packages not already installed.
+1. MODIFY existing files — do NOT recreate config files (vite.config, tsconfig, tailwind.config, package.json).
+2. Follow existing directory structure. New components go in the components directory.
+3. USE pre-installed packages — do NOT install alternatives for what's already available.
+4. Keep the template's styling approach. Build a COMPLETE working app — no placeholders or stubs.
+5. Only run npm install when adding NEW packages not already installed.
 
-Implement the user's request below by MODIFYING existing files and adding new ones as needed.
+Implement the user's request below by modifying existing files and adding new ones as needed.
 `;
 
   return {
