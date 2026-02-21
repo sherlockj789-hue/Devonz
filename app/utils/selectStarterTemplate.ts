@@ -1026,9 +1026,11 @@ RULES:
 3. USE pre-installed packages — do NOT install alternatives for what's already available.
 4. Keep the template's styling approach. Build a COMPLETE working app — no placeholders or stubs.
 5. Only run npm install when adding NEW packages not already installed.
-6. If using react-router-dom: wrap the entire app in <BrowserRouter> inside App.tsx, define ALL <Route> elements matching every nav link. Every route MUST render a real page component.
-7. If using sonner for toasts: add <Toaster /> in App.tsx (import from 'sonner'). Call toast() from event handlers.
-8. When modifying the CSS entry file (index.css or globals.css), ALWAYS preserve the Tailwind directives at the top (@import "tailwindcss" for v4, or @tailwind base/components/utilities for v3) and existing @layer base definitions for CSS variables. Add your styles BELOW the existing content.
+6. If the app needs sample data, create a src/data/seed.ts file with a getInitialData() function — do NOT scatter hardcoded arrays across components.
+7. App.tsx MUST render the user's requested feature — NEVER leave the template default content.
+8. If using react-router-dom: wrap the entire app in <BrowserRouter> inside App.tsx, define ALL <Route> elements matching every nav link. Every route MUST render a real page component.
+9. If using sonner for toasts: add <Toaster /> in App.tsx (import from 'sonner'). Call toast() from event handlers.
+10. When modifying the CSS entry file (index.css or globals.css), ALWAYS preserve the Tailwind directives at the top (@import "tailwindcss" for v4, or @tailwind base/components/utilities for v3) and existing @layer base definitions for CSS variables. Add your styles BELOW the existing content.
 
 Implement the user's request below by modifying existing files and adding new ones as needed.
 `;

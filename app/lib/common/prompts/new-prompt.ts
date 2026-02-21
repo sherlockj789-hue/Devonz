@@ -920,44 +920,18 @@ The todo app is running with local storage persistence.</assistant_response>
 </common_setup_patterns>
 
 <self_validation>
-  BEFORE SENDING RESPONSE, VERIFY EVERY CHECKPOINT:
-
-  Imports & References:
-  [ ] Unique identifiers — no duplicate declarations. Use \`import type\` for type-only imports.
-  [ ] Every import points to a file in this artifact. Relative paths match directory depth (\`../\` count correct).
-  [ ] Every utility call has a matching import (\`cn\` from \`@/lib/utils\`, \`clsx\`, etc.). No undefined references.
-  [ ] Lucide icons: every \`<IconName />\` in JSX has \`import { IconName } from 'lucide-react'\`. UI components (Tooltip, Dialog, Sheet, Popover, Select, Accordion, etc.) come from \`@/components/ui/\` — NEVER \`lucide-react\`. Scan ALL files including .map() callbacks and conditionals.
-  [ ] JSX: use \`<>...</>\` not \`React.Fragment\`. Use named imports (\`import { lazy } from 'react'\`) not \`React.lazy\`.
-  [ ] React 19: no \`forwardRef\`, no manual \`useMemo\`/\`useCallback\`. React 18: opposite rules apply.
-  [ ] No placeholder text: "TODO", "implement this", "your-api-key".
-
-  Dependencies (CRITICAL — scan ALL source files):
-  [ ] Every \`from 'pkg'\` import in code → \`pkg\` exists in package.json deps/devDeps. Missing = build failure.
-  [ ] Companion packages included: zustand+immer, react-hook-form+@hookform/resolvers+zod, @tanstack/react-query+devtools.
-
-  Artifact & Action Order:
-  [ ] package.json FIRST → App.tsx / main source files → other source → config files → \`npm install\` → \`npm run dev\` LAST.
-  [ ] Each shell command in its OWN devonzAction. New deps via package.json file edit, NOT \`npm install <pkg>\`.
-  [ ] Follow-up responses: ONLY modify files the user asked about — no unnecessary config rewrites.
-  [ ] Template components: if user message lists pre-built components, IMPORT them — do NOT create new files for Button, Card, Input, etc.
-
-  Framework Compatibility:
-  [ ] React 18 → R3F v8; React 19 → R3F v9 (never mix).
-  [ ] Tailwind v3: \`@tailwind\` directives + config file. Tailwind v4: \`@import "tailwindcss"\` + \`@theme\`.
-  [ ] Expo projects use Expo Router (NOT React Navigation).
-
-  App Completeness (CRITICAL):
-  [ ] App.tsx renders the MAIN FEATURE — not template default. Every component in JSX has a matching import.
-  [ ] Every nav link → fully implemented page with real content. All routes work bidirectionally.
-  [ ] No mock data arrays — real CRUD with state management. No external API calls with API keys — use seed data.
-  [ ] Every button, form, toggle works. No stubs, TODOs, or "coming soon". Stats derived from real data.
-  [ ] COMPLETE in this response — no "foundation", "scaffold", or "will continue in next turn".
-  [ ] Charts use \`<ChartContainer>\` wrapper (useChart requires it). Never use bare recharts components.
-
-  Quality:
-  [ ] Images: \`loading="lazy"\` / \`fetchpriority="high"\`. Fonts: preloaded. No layout shift.
-  [ ] WCAG 2.2 AA: keyboard nav, focus states, \`prefers-reduced-motion\`.
-  [ ] Never tell user to run commands manually. All paths use forward slashes.
+  PRE-SEND CHECKLIST — scan before every response:
+  [ ] Every \`<Tag />\` in JSX has a matching import (components, icons, UI primitives)
+  [ ] Every \`from 'pkg'\` import → \`pkg\` exists in package.json (including companion deps like zustand+immer)
+  [ ] Import paths match actual file locations (\`../\` count correct, no missing files)
+  [ ] No duplicate identifiers — use \`import type\` or \`as\` aliases for conflicts
+  [ ] Lucide icons from 'lucide-react', UI components from '@/components/ui/' — never mixed
+  [ ] package.json FIRST → App.tsx → source files → configs → npm install → npm run dev LAST
+  [ ] App.tsx renders the FEATURE, not template defaults. All nav links → real pages with content
+  [ ] No mock arrays, no external API keys, no TODOs/stubs — real CRUD with state management
+  [ ] React 18 ↔ R3F v8, React 19 ↔ R3F v9. Tailwind v3 ↔ @tailwind directives, v4 ↔ @import
+  [ ] Template pre-built components: IMPORT them, do NOT recreate. Follow-ups: ONLY modify asked files
+  [ ] COMPLETE in this response — no "will continue next turn" or "foundation/scaffold"
 </self_validation>`;
 
 export const CONTINUE_PROMPT = stripIndents`

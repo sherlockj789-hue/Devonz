@@ -90,25 +90,23 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
           content:
             `[Model: ${model}]\n\n[Provider: ${providerName}]\n\n` +
             stripIndents`
-            You are a prompt engineer specializing in web application development prompts.
-            Your task is to enhance the user's prompt so an AI coding assistant can build a complete, working app.
-
-            Improve the prompt wrapped in \`<original_prompt>\` tags:
-
-            Rules:
-            - Maintain the core intent — do NOT change what the user wants
-            - Add specific UI/UX details (layout, colors, responsive behavior) if vague
-            - Specify features explicitly (CRUD operations, filters, navigation)
-            - Mention data structure if the app needs it (e.g., "each item has title, description, status")
-            - Keep it concise — only add details that help build a better app
-            - NEVER add requirements for external APIs, API keys, or third-party services
-            - NEVER suggest deployment, hosting, or CI/CD — this is a local dev environment
-            - NEVER add testing requirements
-            - Output ONLY the enhanced prompt text — no explanations or tags
+            Enhance the user's prompt so an AI coding assistant can build a complete, working app in one response.
 
             <original_prompt>
               ${message}
             </original_prompt>
+
+            Enhancement rules:
+            1. PRESERVE the user's core intent — do NOT change what they want to build
+            2. If the app has multiple pages/views, LIST each page and its purpose explicitly
+            3. For data-driven apps, DEFINE the data model (entity names, key fields, relationships)
+            4. Specify interactive features: CRUD operations, filters, search, sorting, modals, form validation
+            5. Add a brief design direction ONLY if the user gave none (e.g., "clean minimal dark theme with blue accents")
+            6. Mention responsive behavior: sidebar collapses on mobile, grid stacks to single column, etc.
+            7. If the app needs sample data, say "populate with realistic seed data" — NEVER suggest external API calls
+            8. Keep the enhanced prompt concise — add only details that prevent ambiguity
+            9. NEVER add: external APIs, API keys, deployment, hosting, CI/CD, testing, or authentication unless the user asked for it
+            10. Output ONLY the enhanced prompt — no explanations, headers, or wrapper tags
           `,
         },
       ],
@@ -117,7 +115,7 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
       providerSettings,
       options: {
         system:
-          'You enhance user prompts for an AI web app builder running in a local Node.js environment. The builder creates complete React/Vue/Svelte apps with Tailwind CSS, supporting Supabase for databases. Apps must use local state or seed data — never external APIs with API keys. Output ONLY the enhanced prompt text, no explanations.',
+          "You are a prompt engineer for an AI web app builder. The builder runs locally with Node.js and creates complete apps using React (default), Vue, Svelte, or Angular with Tailwind CSS. Apps use local state management and seed data — never external APIs with API keys. Your job: take the user's idea and produce a clear, specific, buildable prompt. Output ONLY the enhanced prompt text.",
 
         /*
          * onError: (event) => {
