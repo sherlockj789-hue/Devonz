@@ -33,52 +33,65 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
-    const response = await fetch('/api/enhancer', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
+    let response: Response;
+
+    try {
+      response = await fetch('/api/enhancer', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+    } catch (error) {
+      logger.error('Prompt enhancement request failed:', error);
+      setEnhancingPrompt(false);
+
+      return;
+    }
 
     const reader = response.body?.getReader();
 
+    if (!reader) {
+      logger.warn('Prompt enhancement response has no body');
+      setEnhancingPrompt(false);
+
+      return;
+    }
+
     const originalInput = input;
+    const decoder = new TextDecoder();
 
-    if (reader) {
-      const decoder = new TextDecoder();
+    let _input = '';
+    let _error;
 
-      let _input = '';
-      let _error;
+    try {
+      setInput('');
 
-      try {
-        setInput('');
+      while (true) {
+        const { value, done } = await reader.read();
 
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          _input += decoder.decode(value);
-
-          logger.trace('Set input', _input);
-
-          setInput(_input);
-        }
-      } catch (error) {
-        _error = error;
-        setInput(originalInput);
-      } finally {
-        if (_error) {
-          logger.error(_error);
+        if (done) {
+          break;
         }
 
-        setEnhancingPrompt(false);
-        setPromptEnhanced(true);
+        _input += decoder.decode(value);
 
-        setTimeout(() => {
-          setInput(_input);
-        });
+        logger.trace('Set input', _input);
+
+        setInput(_input);
       }
+    } catch (error) {
+      _error = error;
+      setInput(originalInput);
+    } finally {
+      if (_error) {
+        logger.error(_error);
+      }
+
+      setEnhancingPrompt(false);
+      setPromptEnhanced(true);
+
+      setTimeout(() => {
+        setInput(_input);
+      });
     }
   };
 
