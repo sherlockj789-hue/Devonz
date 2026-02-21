@@ -60,6 +60,7 @@ export default class OpenRouterProvider extends BaseProvider {
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: this.createTimeoutSignal(5000),
       });
 
       const data = (await response.json()) as OpenRouterModelsResponse;

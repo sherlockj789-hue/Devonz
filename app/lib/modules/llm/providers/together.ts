@@ -57,6 +57,7 @@ export default class TogetherProvider extends BaseProvider {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: this.createTimeoutSignal(5000),
     });
 
     const res = (await response.json()) as Array<{

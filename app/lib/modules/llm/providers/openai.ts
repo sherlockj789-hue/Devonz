@@ -71,6 +71,7 @@ export default class OpenAIProvider extends BaseProvider {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: this.createTimeoutSignal(5000),
     });
 
     const res = (await response.json()) as { data: Array<{ id: string; object?: string; context_length?: number }> };

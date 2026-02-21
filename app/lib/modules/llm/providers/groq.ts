@@ -56,6 +56,7 @@ export default class GroqProvider extends BaseProvider {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: this.createTimeoutSignal(5000),
     });
 
     const res = (await response.json()) as {

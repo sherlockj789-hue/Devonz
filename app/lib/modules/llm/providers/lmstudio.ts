@@ -46,7 +46,9 @@ export default class LMStudioProvider extends BaseProvider {
       baseUrl = isDocker ? baseUrl.replace('127.0.0.1', 'host.docker.internal') : baseUrl;
     }
 
-    const response = await fetch(`${baseUrl}/v1/models`);
+    const response = await fetch(`${baseUrl}/v1/models`, {
+      signal: this.createTimeoutSignal(5000),
+    });
     const data = (await response.json()) as { data: Array<{ id: string }> };
 
     return data.data.map((model) => ({

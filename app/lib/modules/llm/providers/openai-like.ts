@@ -40,6 +40,7 @@ export default class OpenAILikeProvider extends BaseProvider {
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
+        signal: this.createTimeoutSignal(5000),
       });
 
       if (!response.ok) {

@@ -87,7 +87,9 @@ export default class OllamaProvider extends BaseProvider {
       baseUrl = isDocker ? baseUrl.replace('127.0.0.1', 'host.docker.internal') : baseUrl;
     }
 
-    const response = await fetch(`${baseUrl}/api/tags`);
+    const response = await fetch(`${baseUrl}/api/tags`, {
+      signal: this.createTimeoutSignal(5000),
+    });
     const data = (await response.json()) as OllamaApiResponse;
 
     return data.models.map((model: OllamaModel) => ({

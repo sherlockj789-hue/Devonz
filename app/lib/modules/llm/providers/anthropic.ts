@@ -66,6 +66,7 @@ export default class AnthropicProvider extends BaseProvider {
         'x-api-key': `${apiKey}`,
         'anthropic-version': '2023-06-01',
       },
+      signal: this.createTimeoutSignal(5000),
     });
 
     const res = (await response.json()) as {
