@@ -61,6 +61,25 @@ function loadSettings(): AgentModeSettings {
 
     if (stored) {
       const parsed = JSON.parse(stored);
+
+      /*
+       * Migration: If stored settings were saved before autoApproveCommands
+       * defaulted to true, update them. We detect this by checking if the
+       * stored value explicitly set autoApproveCommands to false AND
+       * there's no migration marker. This ensures existing users get
+       * the new default without overriding intentional user choices later.
+       */
+      const SETTINGS_VERSION = 2;
+
+      if (!parsed._version || parsed._version < SETTINGS_VERSION) {
+        parsed.autoApproveCommands = DEFAULT_AGENT_SETTINGS.autoApproveCommands;
+        parsed._version = SETTINGS_VERSION;
+
+        // Re-save with migration applied
+        localStorage.setItem('devonz_agent_mode_settings', JSON.stringify({ ...DEFAULT_AGENT_SETTINGS, ...parsed }));
+        logger.debug('Migrated agent mode settings to version', SETTINGS_VERSION);
+      }
+
       return { ...DEFAULT_AGENT_SETTINGS, ...parsed };
     }
   } catch (error) {
