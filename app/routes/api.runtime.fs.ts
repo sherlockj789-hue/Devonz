@@ -13,6 +13,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Buffer } from 'node:buffer';
 import { RuntimeManager } from '~/lib/runtime/local-runtime';
+import type { RuntimeFileSystem, WatchEvent } from '~/lib/runtime/runtime-provider';
 import { isValidProjectId, isSafePath } from '~/lib/runtime/runtime-provider';
 import { withSecurity } from '~/lib/security';
 import { createScopedLogger } from '~/utils/logger';
@@ -52,8 +53,6 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
       } catch {
-        logger.debug(`readFile not found: ${filePath}`);
-
         /*
          * Use 204 (No Content) instead of 404 for missing files.
          * Browsers auto-log 404 fetch responses as console errors,
@@ -73,8 +72,6 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
           headers: { 'Content-Type': 'application/octet-stream' },
         });
       } catch {
-        logger.debug(`readFileRaw not found: ${filePath}`);
-
         return new Response(null, { status: 204 });
       }
     }
@@ -95,7 +92,6 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
         const code = (error as NodeJS.ErrnoException)?.code;
 
         if (code === 'ENOENT' || code === 'ENOTDIR') {
-          logger.debug(`readdir: not a directory or does not exist, returning []: ${filePath}`);
           return json([]);
         }
 
@@ -111,8 +107,6 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
         const stat = await runtime.fs.stat(filePath);
         return json(stat);
       } catch {
-        logger.debug(`stat not found: ${filePath}`);
-
         // Return 204 instead of 404 to avoid browser console noise
         return new Response(null, { status: 204 });
       }
@@ -128,7 +122,7 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
 
       // SSE stream for file watch events
       const stream = new ReadableStream({
-        start(controller) {
+        async start(controller) {
           const encoder = new TextEncoder();
 
           const dispose = runtime.fs.watch(glob, (events) => {
@@ -142,6 +136,22 @@ async function fsLoader({ request }: LoaderFunctionArgs) {
 
           // Send initial heartbeat
           controller.enqueue(encoder.encode('data: []\n\n'));
+
+          /*
+           * Emit initial file listing so existing files appear in the
+           * file tree after a page refresh. fs.watch only reports
+           * changes — it does not emit events for already-existing files.
+           */
+          try {
+            const initialEvents = await walkProjectDir(runtime.fs);
+
+            if (initialEvents.length > 0) {
+              const data = `data: ${JSON.stringify(initialEvents)}\n\n`;
+              controller.enqueue(encoder.encode(data));
+            }
+          } catch {
+            // Non-critical — watcher still works for new changes
+          }
 
           // Clean up when client disconnects
           request.signal.addEventListener('abort', () => {
@@ -288,6 +298,49 @@ async function fsAction({ request }: ActionFunctionArgs) {
       return json({ error: `Unknown operation: ${op}` }, { status: 400 });
     }
   }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Initial file listing helper
+ * ---------------------------------------------------------------------------
+ */
+
+/** Directories to skip during the initial walk. */
+const WALK_SKIP = new Set(['node_modules', '.git', '.next', 'dist', 'build', '.cache']);
+
+/**
+ * Recursively walk a project directory and return `addDir` / `add` watch
+ * events for every entry. Used to populate the file tree when a watch
+ * SSE client first connects (fs.watch only reports *changes*).
+ */
+async function walkProjectDir(fs: RuntimeFileSystem, dir = '.'): Promise<WatchEvent[]> {
+  const events: WatchEvent[] = [];
+
+  try {
+    const entries = await fs.readdir(dir);
+
+    for (const entry of entries) {
+      if (WALK_SKIP.has(entry.name)) {
+        continue;
+      }
+
+      const entryPath = dir === '.' ? entry.name : `${dir}/${entry.name}`;
+
+      if (entry.isDirectory) {
+        events.push({ type: 'addDir', path: entryPath });
+
+        const sub = await walkProjectDir(fs, entryPath);
+        events.push(...sub);
+      } else if (entry.isFile) {
+        events.push({ type: 'add', path: entryPath });
+      }
+    }
+  } catch {
+    // Directory doesn't exist or can't be read — not critical
+  }
+
+  return events;
 }
 
 /*

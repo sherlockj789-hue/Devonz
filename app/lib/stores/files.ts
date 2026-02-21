@@ -741,7 +741,15 @@ export class FilesStore {
         case 'add':
         case 'change': {
           if (event.type === 'add') {
-            this.#size++;
+            /*
+             * Only increment size if the file doesn't already exist in the map.
+             * The initial walk and watcher can both emit 'add' for the same file.
+             */
+            const existing = this.files.get()[sanitizedPath];
+
+            if (!existing) {
+              this.#size++;
+            }
           }
 
           await this.#readAndSetFile(sanitizedPath);
