@@ -42,7 +42,7 @@ interface WorkspaceProps {
   metadata?: {
     gitUrl?: string;
   };
-  updateChatMestaData?: (metadata: IChatMetadata) => void;
+  updateChatMetaData?: (metadata: IChatMetadata) => void;
   setSelectedElement?: (element: ElementInfo | null) => void;
 
   /** The width of the workbench panel in pixels */
@@ -70,7 +70,7 @@ export const Workbench = memo(
     chatStarted,
     isStreaming,
     metadata: _metadata,
-    updateChatMestaData: _updateChatMestaData,
+    updateChatMetaData: _updateChatMetaData,
     setSelectedElement,
     width,
     fullWidth,

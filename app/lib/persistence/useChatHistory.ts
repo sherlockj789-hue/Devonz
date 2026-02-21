@@ -351,7 +351,7 @@ export function useChatHistory() {
   return {
     ready: !mixedId || ready,
     initialMessages,
-    updateChatMestaData: async (metadata: IChatMetadata) => {
+    updateChatMetaData: async (metadata: IChatMetadata) => {
       const id = chatId.get();
 
       if (!db || !id) {

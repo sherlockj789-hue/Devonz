@@ -439,7 +439,7 @@ export class ActionRunner {
     });
     logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
-    if (resp?.exitCode != 0) {
+    if (resp?.exitCode !== 0) {
       const enhancedError = this.#createEnhancedShellError(action.content, resp?.exitCode, resp?.output);
       throw new ActionCommandError(enhancedError.title, enhancedError.details);
     }
@@ -538,7 +538,7 @@ export class ActionRunner {
     const resp = result;
     logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
-    if (resp?.exitCode != 0) {
+    if (resp?.exitCode !== 0) {
       throw new ActionCommandError('Failed To Start Application', resp?.output || 'No Output Available');
     }
 
