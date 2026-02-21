@@ -8,6 +8,7 @@ const logger = createScopedLogger('BugReport');
 
 // Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX_ENTRIES = 10_000;
 
 // Input validation schema
 const bugReportSchema = z.object({
@@ -50,8 +51,18 @@ function checkRateLimit(ip: string): boolean {
   const limit = rateLimitStore.get(key);
 
   if (!limit || now > limit.resetTime) {
+    // Prune expired entries periodically to prevent unbounded Map growth
+    if (rateLimitStore.size >= RATE_LIMIT_MAX_ENTRIES) {
+      for (const [storedKey, storedValue] of rateLimitStore) {
+        if (now > storedValue.resetTime) {
+          rateLimitStore.delete(storedKey);
+        }
+      }
+    }
+
     // Reset window (1 hour)
     rateLimitStore.set(key, { count: 1, resetTime: now + 60 * 60 * 1000 });
+
     return true;
   }
 

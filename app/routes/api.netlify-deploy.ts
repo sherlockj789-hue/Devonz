@@ -66,6 +66,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
         const siteName = `devonz-${chatId}-${Date.now()}`;
         const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
           method: 'POST',
+          signal: AbortSignal.timeout(30_000),
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -96,6 +97,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
         // Get existing site info
         if (targetSiteId) {
           const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${targetSiteId}`, {
+            signal: AbortSignal.timeout(30_000),
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -119,6 +121,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
           const siteName = `devonz-${chatId}-${Date.now()}`;
           const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
             method: 'POST',
+            signal: AbortSignal.timeout(30_000),
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -161,6 +164,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
       // Create a new deploy with digests
       const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${targetSiteId}/deploys`, {
         method: 'POST',
+        signal: AbortSignal.timeout(30_000),
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -193,6 +197,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
         const statusResponse = await fetch(
           `https://api.netlify.com/api/v1/sites/${targetSiteId}/deploys/${deploy.id}`,
           {
+            signal: AbortSignal.timeout(15_000),
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -227,6 +232,7 @@ async function netlifyDeployAction({ request }: ActionFunctionArgs) {
                   `https://api.netlify.com/api/v1/deploys/${deploy.id}/files${encodedPath}`,
                   {
                     method: 'PUT',
+                    signal: AbortSignal.timeout(60_000),
                     headers: {
                       Authorization: `Bearer ${token}`,
                       'Content-Type': 'application/octet-stream',
