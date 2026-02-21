@@ -205,18 +205,39 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             e.preventDefault();
             e.currentTarget.style.border = '1px solid var(--devonz-elements-borderColor)';
 
-            const files = Array.from(e.dataTransfer.files);
-            files.forEach((file) => {
-              if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
+            const droppedFiles = Array.from(e.dataTransfer.files);
+            const imageFiles = droppedFiles.filter((file) => file.type.startsWith('image/'));
 
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
-                  props.setUploadedFiles?.([...props.uploadedFiles, file]);
-                  props.setImageDataList?.([...props.imageDataList, base64Image]);
-                };
-                reader.readAsDataURL(file);
-              }
+            if (imageFiles.length === 0) {
+              return;
+            }
+
+            /*
+             * Read all images in parallel and set state once to avoid
+             * stale-closure overwrites when multiple files are dropped.
+             */
+            const readPromises = imageFiles.map(
+              (file) =>
+                new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => resolve((ev.target?.result as string) ?? '');
+                  reader.onerror = () => resolve('');
+                  reader.readAsDataURL(file);
+                }),
+            );
+
+            Promise.all(readPromises).then((results) => {
+              const validIndices = results.reduce<number[]>((acc, r, i) => {
+                if (r) {
+                  acc.push(i);
+                }
+
+                return acc;
+              }, []);
+              const validFiles = validIndices.map((i) => imageFiles[i]);
+              const validResults = validIndices.map((i) => results[i]);
+              props.setUploadedFiles?.([...props.uploadedFiles, ...validFiles]);
+              props.setImageDataList?.([...props.imageDataList, ...validResults]);
             });
           }}
           onKeyDown={(event) => {
@@ -316,7 +337,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 <IconButton
                   title="Select Model"
                   className={classNames('transition-all flex items-center gap-1', {
-                    'bg-devonz-elements-item-backgroundAccent text-devonz-elements-item-contentAccent': isModelSelectorOpen,
+                    'bg-devonz-elements-item-backgroundAccent text-devonz-elements-item-contentAccent':
+                      isModelSelectorOpen,
                     'bg-devonz-elements-item-backgroundDefault text-devonz-elements-item-contentDefault':
                       !isModelSelectorOpen,
                   })}
