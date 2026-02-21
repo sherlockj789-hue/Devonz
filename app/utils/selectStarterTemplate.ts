@@ -107,6 +107,37 @@ const VUE_COMBINED_PACKAGES: Record<string, string> = {
   ...VUE_EXTRA_PACKAGES,
 };
 
+/**
+ * Svelte-specific packages commonly used by LLMs in SvelteKit projects.
+ */
+const SVELTE_EXTRA_PACKAGES: Record<string, string> = {
+  'svelte-sonner': '^0.3.28',
+  'bits-ui': '^1.0.0-next.72',
+};
+
+/**
+ * Combined packages for Svelte-family templates.
+ */
+const SVELTE_COMBINED_PACKAGES: Record<string, string> = {
+  ...UNIVERSAL_EXTRA_PACKAGES,
+  ...SVELTE_EXTRA_PACKAGES,
+};
+
+/**
+ * Angular-specific packages commonly used by LLMs.
+ */
+const ANGULAR_EXTRA_PACKAGES: Record<string, string> = {
+  '@angular/cdk': '^19.0.0',
+};
+
+/**
+ * Combined packages for Angular templates.
+ */
+const ANGULAR_COMBINED_PACKAGES: Record<string, string> = {
+  ...UNIVERSAL_EXTRA_PACKAGES,
+  ...ANGULAR_EXTRA_PACKAGES,
+};
+
 interface PromptTemplate {
   name: string;
   description: string;
@@ -423,6 +454,143 @@ function injectUniversalPackages(files: Array<{ name: string; path: string; cont
 }
 
 /**
+ * Inject Svelte-specific + universal packages into SvelteKit templates.
+ */
+function injectSveltePackages(files: Array<{ name: string; path: string; content: string }>): void {
+  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
+
+  if (!pkgJsonFile) {
+    return;
+  }
+
+  try {
+    const pkgJson = JSON.parse(pkgJsonFile.content);
+    const deps = pkgJson.dependencies || {};
+    const devDeps = pkgJson.devDependencies || {};
+    const allExistingDeps = { ...deps, ...devDeps };
+    let injectedCount = 0;
+
+    for (const [pkg, version] of Object.entries(SVELTE_COMBINED_PACKAGES)) {
+      if (!allExistingDeps[pkg] && !deps[pkg]) {
+        deps[pkg] = version;
+        injectedCount++;
+      }
+    }
+
+    if (injectedCount > 0) {
+      pkgJson.dependencies = deps;
+      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
+      logger.info(`Injected ${injectedCount} Svelte + universal packages into template package.json`);
+    }
+  } catch (error) {
+    logger.error('Failed to inject Svelte packages:', error);
+  }
+}
+
+/**
+ * Inject Angular-specific + universal packages into Angular templates.
+ */
+function injectAngularPackages(files: Array<{ name: string; path: string; content: string }>): void {
+  const pkgJsonFile = files.find((f) => f.path === 'package.json' || f.name === 'package.json');
+
+  if (!pkgJsonFile) {
+    return;
+  }
+
+  try {
+    const pkgJson = JSON.parse(pkgJsonFile.content);
+    const deps = pkgJson.dependencies || {};
+    const devDeps = pkgJson.devDependencies || {};
+    const allExistingDeps = { ...deps, ...devDeps };
+    let injectedCount = 0;
+
+    for (const [pkg, version] of Object.entries(ANGULAR_COMBINED_PACKAGES)) {
+      if (!allExistingDeps[pkg] && !deps[pkg]) {
+        deps[pkg] = version;
+        injectedCount++;
+      }
+    }
+
+    if (injectedCount > 0) {
+      pkgJson.dependencies = deps;
+      pkgJsonFile.content = JSON.stringify(pkgJson, null, 2);
+      logger.info(`Injected ${injectedCount} Angular + universal packages into template package.json`);
+    }
+  } catch (error) {
+    logger.error('Failed to inject Angular packages:', error);
+  }
+}
+
+/**
+ * Detect template architecture from its files.
+ * Returns a concise summary for the LLM to understand the project structure.
+ */
+function detectTemplateArchitecture(files: Array<{ name: string; path: string; content: string }>): string {
+  const filePaths = files.map((f) => f.path);
+  const parts: string[] = [];
+
+  // Detect entry point
+  const entryPoints = [
+    'src/App.tsx',
+    'src/App.jsx',
+    'src/App.vue',
+    'src/App.svelte',
+    'src/app/page.tsx',
+    'src/routes/+page.svelte',
+    'src/app/app.component.ts',
+    'app/page.tsx',
+    'pages/index.tsx',
+    'src/main.tsx',
+    'src/main.ts',
+  ];
+  const foundEntry = entryPoints.find((ep) => filePaths.includes(ep));
+
+  if (foundEntry) {
+    parts.push(`Entry: ${foundEntry}`);
+  }
+
+  // Detect component directory
+  const componentDirs = ['src/components/', 'components/', 'src/components/ui/', 'app/components/'];
+  const foundCompDir = componentDirs.find((d) => filePaths.some((fp) => fp.startsWith(d)));
+
+  if (foundCompDir) {
+    parts.push(`Components: ${foundCompDir}`);
+  }
+
+  // Detect routing
+  const pkgFile = files.find((f) => f.path === 'package.json');
+
+  if (pkgFile) {
+    try {
+      const pkg = JSON.parse(pkgFile.content);
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+      if (allDeps['react-router-dom']) {
+        parts.push('Routing: react-router-dom');
+      } else if (allDeps['vue-router']) {
+        parts.push('Routing: vue-router');
+      } else if (allDeps['@sveltejs/kit']) {
+        parts.push('Routing: SvelteKit file-based');
+      } else if (allDeps.next) {
+        parts.push('Routing: Next.js App Router');
+      } else if (allDeps['@angular/router']) {
+        parts.push('Routing: Angular Router');
+      }
+
+      // Detect CSS framework
+      if (allDeps.tailwindcss) {
+        const hasTwConfig = filePaths.some((fp) => fp.includes('tailwind.config'));
+        parts.push(hasTwConfig ? 'CSS: Tailwind v3' : 'CSS: Tailwind v4');
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  return parts.length > 0 ? parts.join(' | ') : '';
+}
+
+/**
  * Frameworks whose templates should get full COMMON_EXTRA_PACKAGES
  * (React-specific + universal) injected into package.json.
  */
@@ -445,6 +613,26 @@ const VUE_TEMPLATE_KEYWORDS = ['vue'];
 function isVueFamily(templateName: string): boolean {
   const lower = templateName.toLowerCase();
   return VUE_TEMPLATE_KEYWORDS.some((kw) => lower.includes(kw)) && !lower.includes('slidev');
+}
+
+const SVELTE_TEMPLATE_KEYWORDS = ['svelte', 'sveltekit'];
+
+/**
+ * Returns true when `templateName` is a Svelte-family framework.
+ */
+function isSvelteFamily(templateName: string): boolean {
+  const lower = templateName.toLowerCase();
+  return SVELTE_TEMPLATE_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+const ANGULAR_TEMPLATE_KEYWORDS = ['angular'];
+
+/**
+ * Returns true when `templateName` is an Angular framework.
+ */
+function isAngularFamily(templateName: string): boolean {
+  const lower = templateName.toLowerCase();
+  return ANGULAR_TEMPLATE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 export async function getTemplates(templateName: string, title?: string) {
@@ -548,7 +736,9 @@ export async function getTemplates(templateName: string, title?: string) {
    * - Shadcn templates: inject peer deps + React common + universal packages
    * - Other React-family templates: inject React common + universal packages
    * - Vue-family templates: inject Vue-specific + universal packages
-   * - All other frameworks (Svelte, Astro, Angular, Solid, Qwik, etc.): inject universal packages
+   * - Svelte-family templates: inject Svelte-specific + universal packages
+   * - Angular templates: inject Angular-specific + universal packages
+   * - All other frameworks (Astro, Solid, Qwik, etc.): inject universal packages only
    */
   if (resolvedName.toLowerCase().includes('shadcn')) {
     injectShadcnPeerDeps(files);
@@ -556,9 +746,13 @@ export async function getTemplates(templateName: string, title?: string) {
     injectCommonPackages(files);
   } else if (isVueFamily(resolvedName)) {
     injectVuePackages(files);
+  } else if (isSvelteFamily(resolvedName)) {
+    injectSveltePackages(files);
+  } else if (isAngularFamily(resolvedName)) {
+    injectAngularPackages(files);
   } else {
     /*
-     * All other templates (Svelte, Astro, Angular, Solid, Qwik, Slidev, etc.)
+     * All other templates (Astro, Solid, Qwik, Slidev, etc.)
      * get framework-agnostic universal packages (date-fns, axios, zod)
      */
     injectUniversalPackages(files);
@@ -694,17 +888,26 @@ ${resolvedName.toLowerCase().includes('shadcn') ? `- Shadcn/ui template: Radix U
     availablePackageHint = Object.keys(COMMON_EXTRA_PACKAGES).join(', ');
   } else if (isVueFamily(resolvedName)) {
     availablePackageHint = Object.keys(VUE_COMBINED_PACKAGES).join(', ');
+  } else if (isSvelteFamily(resolvedName)) {
+    availablePackageHint = Object.keys(SVELTE_COMBINED_PACKAGES).join(', ');
+  } else if (isAngularFamily(resolvedName)) {
+    availablePackageHint = Object.keys(ANGULAR_COMBINED_PACKAGES).join(', ');
   } else {
     availablePackageHint = Object.keys(UNIVERSAL_EXTRA_PACKAGES).join(', ');
   }
 
+  // Detect template architecture for LLM context
+  const archSummary = detectTemplateArchitecture(filteredFiles);
+
   userMessage += `
 Template "${displayName}" imported and running.
-Pre-installed packages (ready to import): ${availablePackageHint}.
+${archSummary ? `Architecture: ${archSummary}\n` : ''}Pre-installed packages (ready to import): ${availablePackageHint}.
 
 RULES:
 1. Edit only the files you need — preserve existing imports, exports, and structure.
 2. Follow the template's existing directory structure and patterns.
+3. USE the pre-installed packages above. Do NOT install alternatives (e.g., use lucide-react not heroicons).
+4. Keep the template's styling approach (CSS modules, Tailwind, etc.) — do not switch frameworks.
 `;
 
   return {
