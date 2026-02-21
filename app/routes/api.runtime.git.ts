@@ -22,6 +22,11 @@ import {
   checkoutCommit,
   checkoutMain,
   getCommitFiles,
+  getCommitFilesWithStatus,
+  getFileDiff,
+  getCommitDiff,
+  archiveCommit,
+  archiveChangedFiles,
 } from '~/lib/runtime/git-manager';
 import { withSecurity } from '~/lib/security';
 
@@ -111,6 +116,70 @@ async function gitAction({ request }: ActionFunctionArgs) {
       const files = getCommitFiles(workdir, sha);
 
       return json({ files });
+    }
+
+    case 'commit-files-status': {
+      const { sha } = body;
+
+      if (!sha || typeof sha !== 'string') {
+        return json({ error: 'Missing commit SHA' }, { status: 400 });
+      }
+
+      const files = getCommitFilesWithStatus(workdir, sha);
+
+      return json({ files });
+    }
+
+    case 'file-diff': {
+      const { sha, file } = body;
+
+      if (!sha || typeof sha !== 'string') {
+        return json({ error: 'Missing commit SHA' }, { status: 400 });
+      }
+
+      if (!file || typeof file !== 'string') {
+        return json({ error: 'Missing file path' }, { status: 400 });
+      }
+
+      const diff = getFileDiff(workdir, sha, file);
+
+      return json({ diff });
+    }
+
+    case 'commit-diff': {
+      const { sha } = body;
+
+      if (!sha || typeof sha !== 'string') {
+        return json({ error: 'Missing commit SHA' }, { status: 400 });
+      }
+
+      const diff = getCommitDiff(workdir, sha);
+
+      return json({ diff });
+    }
+
+    case 'archive': {
+      const { sha, type: archiveType } = body;
+
+      if (!sha || typeof sha !== 'string') {
+        return json({ error: 'Missing commit SHA' }, { status: 400 });
+      }
+
+      try {
+        const zipBuffer = archiveType === 'changed' ? archiveChangedFiles(workdir, sha) : archiveCommit(workdir, sha);
+
+        return new Response(new Uint8Array(zipBuffer), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/zip',
+            'Content-Disposition': `attachment; filename="project-${sha.substring(0, 7)}.zip"`,
+            'Content-Length': String(zipBuffer.length),
+          },
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Archive failed';
+        return json({ error: msg }, { status: 500 });
+      }
     }
 
     default: {

@@ -105,3 +105,79 @@ export async function getCommitFiles(projectId: string, sha: string): Promise<st
     return [];
   }
 }
+
+export interface FileChange {
+  file: string;
+  status: string;
+}
+
+/**
+ * Get files changed in a commit with their change status (A/M/D).
+ */
+export async function getCommitFilesWithStatus(projectId: string, sha: string): Promise<FileChange[]> {
+  try {
+    const result = await gitApi<{ files: FileChange[] }>('commit-files-status', projectId, { sha });
+    return result.files;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get the unified diff for a specific file in a commit.
+ */
+export async function getFileDiff(projectId: string, sha: string, file: string): Promise<string> {
+  try {
+    const result = await gitApi<{ diff: string }>('file-diff', projectId, { sha, file });
+    return result.diff;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Get the full diff for an entire commit.
+ */
+export async function getCommitDiff(projectId: string, sha: string): Promise<string> {
+  try {
+    const result = await gitApi<{ diff: string }>('commit-diff', projectId, { sha });
+    return result.diff;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Download a project archive (full or changed files only).
+ * Triggers a browser download.
+ */
+export async function downloadArchive(projectId: string, sha: string, type: 'full' | 'changed'): Promise<void> {
+  try {
+    const response = await fetch('/api/runtime/git', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'archive', projectId, sha, type }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `project-${sha.substring(0, 7)}-${type}.zip`;
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  } catch (error) {
+    logger.error('Download archive failed:', error);
+    throw error;
+  }
+}

@@ -276,3 +276,148 @@ export function getCommitFiles(projectDir: string, commitSha: string): string[] 
     return [];
   }
 }
+
+/**
+ * Get files changed in a commit WITH their change status (A/M/D/R).
+ */
+export function getCommitFilesWithStatus(projectDir: string, commitSha: string): { file: string; status: string }[] {
+  if (!checkGitAvailable()) {
+    return [];
+  }
+
+  assertValidSha(commitSha);
+
+  try {
+    const raw = gitExec(`git diff-tree --no-commit-id --name-status -r ${commitSha}`, projectDir);
+
+    if (!raw) {
+      return [];
+    }
+
+    return raw
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [status, ...fileParts] = line.split('\t');
+        return { file: fileParts.join('\t'), status: status.charAt(0) };
+      });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get the unified diff for a specific file in a commit.
+ */
+export function getFileDiff(projectDir: string, commitSha: string, filePath: string): string {
+  if (!checkGitAvailable()) {
+    return '';
+  }
+
+  assertValidSha(commitSha);
+
+  // Sanitize filePath — only allow safe characters
+  const safePath = filePath.replace(/[;&|`$(){}]/g, '');
+
+  try {
+    // Check if this is the initial commit (has no parent)
+    let hasParent = true;
+
+    try {
+      gitExec(`git rev-parse ${commitSha}^`, projectDir);
+    } catch {
+      hasParent = false;
+    }
+
+    if (hasParent) {
+      return gitExec(`git diff ${commitSha}^ ${commitSha} -- "${safePath}"`, projectDir);
+    }
+
+    // For initial commit, show the entire file as added
+    return gitExec(`git show ${commitSha} -- "${safePath}"`, projectDir);
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Get the full unified diff for an entire commit (all files).
+ */
+export function getCommitDiff(projectDir: string, commitSha: string): string {
+  if (!checkGitAvailable()) {
+    return '';
+  }
+
+  assertValidSha(commitSha);
+
+  try {
+    let hasParent = true;
+
+    try {
+      gitExec(`git rev-parse ${commitSha}^`, projectDir);
+    } catch {
+      hasParent = false;
+    }
+
+    if (hasParent) {
+      return gitExec(`git diff ${commitSha}^ ${commitSha}`, projectDir);
+    }
+
+    // Initial commit — show all files as added
+    return gitExec(`git show ${commitSha}`, projectDir);
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Create a zip archive of the project at a specific commit.
+ * Returns the raw zip buffer.
+ */
+export function archiveCommit(projectDir: string, commitSha: string): Buffer {
+  assertValidSha(commitSha);
+
+  try {
+    return execSync(`git archive --format=zip ${commitSha}`, {
+      cwd: projectDir,
+      timeout: 30_000,
+      maxBuffer: 100 * 1024 * 1024, // 100MB max
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    logger.error('Archive failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a zip of only the changed files in a specific commit.
+ * Uses git show to get file contents and packages them with Node's built-in zlib.
+ */
+export function archiveChangedFiles(projectDir: string, commitSha: string): Buffer {
+  assertValidSha(commitSha);
+
+  try {
+    const files = getCommitFilesWithStatus(projectDir, commitSha);
+    const addedOrModified = files.filter((f) => f.status !== 'D');
+
+    if (addedOrModified.length === 0) {
+      throw new Error('No files to archive');
+    }
+
+    // Use git archive with pathspec to include only changed files
+    const paths = addedOrModified.map((f) => `"${f.file.replace(/[;&|`$(){}]/g, '')}"`).join(' ');
+
+    return execSync(`git archive --format=zip ${commitSha} -- ${paths}`, {
+      cwd: projectDir,
+      timeout: 30_000,
+      maxBuffer: 100 * 1024 * 1024,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    logger.error('Archive changed files failed:', error);
+    throw error;
+  }
+}
