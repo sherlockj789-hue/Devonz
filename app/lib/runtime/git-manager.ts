@@ -16,6 +16,19 @@ import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('GitManager');
 
+/** Matches a valid git SHA — 4-40 hex characters. */
+const VALID_SHA = /^[a-f0-9]{4,40}$/i;
+
+/**
+ * Validate that a string looks like a legitimate git SHA.
+ * Prevents shell injection when the value is interpolated into commands.
+ */
+function assertValidSha(sha: string): void {
+  if (!VALID_SHA.test(sha)) {
+    throw new Error(`Invalid git SHA: ${sha.substring(0, 50)}`);
+  }
+}
+
 export interface GitCommitInfo {
   sha: string;
   shortSha: string;
@@ -139,9 +152,12 @@ export function getGitLog(projectDir: string, maxCount = 50): GitCommitInfo[] {
     return [];
   }
 
+  // Clamp to a safe positive integer to prevent injection via string values
+  const safeMax = Math.max(1, Math.min(Math.trunc(Number(maxCount)) || 50, 1000));
+
   try {
     const format = '%H%n%h%n%s%n%at%n%aI';
-    const raw = gitExec(`git log --format="${format}" -n ${maxCount}`, projectDir);
+    const raw = gitExec(`git log --format="${format}" -n ${safeMax}`, projectDir);
 
     if (!raw) {
       return [];
@@ -174,6 +190,8 @@ export function getDiff(projectDir: string, commitSha: string): string {
     return '';
   }
 
+  assertValidSha(commitSha);
+
   try {
     return gitExec(`git diff ${commitSha} --stat`, projectDir);
   } catch {
@@ -189,6 +207,8 @@ export function checkoutCommit(projectDir: string, commitSha: string): boolean {
   if (!checkGitAvailable()) {
     return false;
   }
+
+  assertValidSha(commitSha);
 
   try {
     gitExec('git add -A', projectDir);
@@ -246,6 +266,8 @@ export function getCommitFiles(projectDir: string, commitSha: string): string[] 
   if (!checkGitAvailable()) {
     return [];
   }
+
+  assertValidSha(commitSha);
 
   try {
     const raw = gitExec(`git diff-tree --no-commit-id --name-only -r ${commitSha}`, projectDir);
