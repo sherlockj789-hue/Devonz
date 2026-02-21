@@ -61,31 +61,6 @@ const CommitCard = memo(({ commit, isLatest, isCheckedOut, onRestore, onViewFile
         borderLeft: isHovered ? '2px solid var(--devonz-elements-button-primary-background)' : '2px solid transparent',
       }}
     >
-      {/* Timeline column: icon + vertical line */}
-      <div className="flex flex-col items-center flex-shrink-0" style={{ width: '32px' }}>
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center relative z-1"
-          style={{
-            background: isLatest
-              ? 'var(--devonz-elements-button-primary-background)'
-              : 'var(--devonz-elements-button-secondary-background)',
-            border: `2px solid ${isLatest ? 'var(--devonz-elements-button-primary-background)' : 'var(--devonz-elements-borderColor)'}`,
-          }}
-        >
-          <div
-            className="i-ph:git-commit text-sm"
-            style={{
-              color: isLatest ? 'var(--devonz-elements-button-primary-text)' : 'var(--devonz-elements-textSecondary)',
-            }}
-          />
-        </div>
-        {/* Vertical timeline connector */}
-        <div
-          className="flex-1 w-px mt-1"
-          style={{ background: 'var(--devonz-elements-borderColor)', minHeight: '12px' }}
-        />
-      </div>
-
       {/* Thumbnail */}
       <div className="flex-shrink-0 pt-0.5">
         {thumbnail ? (
@@ -200,6 +175,7 @@ export const Versions = memo(() => {
   const [restoring, setRestoring] = useState(false);
 
   const versionsMap = useStore(versionsStore.versions);
+  const lastCommitTs = useStore(versionsStore.lastCommitTimestamp);
 
   const thumbnailsBySha = useMemo(() => {
     const thumbMap = new Map<string, string>();
@@ -250,6 +226,13 @@ export const Versions = memo(() => {
       clearInterval(interval);
     };
   }, [loadCommits]);
+
+  // Auto-refresh when a new commit SHA is stored
+  useEffect(() => {
+    if (lastCommitTs > 0) {
+      loadCommits();
+    }
+  }, [lastCommitTs, loadCommits]);
 
   const handleRestore = useCallback(
     async (sha: string) => {

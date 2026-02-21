@@ -20,6 +20,9 @@ class VersionsStore {
   versions = map<Record<string, ProjectVersion>>({});
   currentVersionId = atom<string | null>(null);
 
+  /** Bumped after a git commit SHA is stored — lets Versions.tsx auto-refresh. */
+  lastCommitTimestamp = atom<number>(0);
+
   private _db: IDBDatabase | undefined;
   private _chatId: string | undefined;
 
@@ -246,6 +249,7 @@ class VersionsStore {
     if (version) {
       this.versions.setKey(versionId, { ...version, commitSha: sha });
       this._persistToDB();
+      this.lastCommitTimestamp.set(Date.now());
     }
   }
 
