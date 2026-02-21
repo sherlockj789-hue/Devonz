@@ -47,6 +47,13 @@ export function usePromptEnhancer() {
       return;
     }
 
+    if (!response.ok) {
+      logger.error('Prompt enhancement returned error status:', response.status);
+      setEnhancingPrompt(false);
+
+      return;
+    }
+
     const reader = response.body?.getReader();
 
     if (!reader) {
