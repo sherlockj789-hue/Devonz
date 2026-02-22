@@ -473,7 +473,7 @@ const nextjsShadcn: InlineFile[] = [
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
