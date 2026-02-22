@@ -64,7 +64,7 @@ function injectCaptureScript(html: string): string {
   clean = stripInspectorTag(clean);
 
   // Build the combined injection (capture inline + inspector external)
-  const injection = INSPECTOR_JS ? `${CAPTURE_SCRIPT}\n${INSPECTOR_TAG}` : CAPTURE_SCRIPT;
+  const injection = getInspectorScript() ? `${CAPTURE_SCRIPT}\n${INSPECTOR_TAG}` : CAPTURE_SCRIPT;
 
   // Inject before </head> if present, otherwise before </body>, otherwise append
   if (clean.includes('</head>')) {
@@ -84,8 +84,6 @@ function injectCaptureScript(html: string): string {
  * Build the inspector script from modular source files in `public/inspector/`.
  */
 import { getInspectorScript, getHtml2CanvasScript } from '~/lib/inspector/build-inspector-script';
-
-const INSPECTOR_JS = getInspectorScript();
 
 /** Name of the external inspector script written to the user's public/. */
 const INSPECTOR_SCRIPT_FILENAME = '_devonz-inspector.js';
@@ -142,7 +140,7 @@ function injectLayoutCaptureTag(content: string): string {
   clean = stripInspectorTag(clean);
 
   // Build the combined injection tags
-  const tags = INSPECTOR_JS ? `${LAYOUT_CAPTURE_TAG}\n${INSPECTOR_TAG}` : LAYOUT_CAPTURE_TAG;
+  const tags = getInspectorScript() ? `${LAYOUT_CAPTURE_TAG}\n${INSPECTOR_TAG}` : LAYOUT_CAPTURE_TAG;
 
   if (clean.includes('</body>')) {
     return clean.replace('</body>', `${tags}\n</body>`);
@@ -193,7 +191,9 @@ export class LocalFileSystem implements RuntimeFileSystem {
    * Skips if already written this session or if the inspector source is unavailable.
    */
   async #ensureInspectorScriptFile(): Promise<void> {
-    if (this.#inspectorScriptWritten || !INSPECTOR_JS) {
+    const inspectorScript = getInspectorScript();
+
+    if (this.#inspectorScriptWritten || !inspectorScript) {
       return;
     }
 
@@ -201,10 +201,23 @@ export class LocalFileSystem implements RuntimeFileSystem {
     await fs.mkdir(publicDir, { recursive: true });
 
     const inspectorFile = nodePath.join(publicDir, INSPECTOR_SCRIPT_FILENAME);
-    await fs.writeFile(inspectorFile, INSPECTOR_JS, 'utf-8');
+
+    await fs.writeFile(inspectorFile, inspectorScript, 'utf-8');
     this.#inspectorScriptWritten = true;
 
     logger.debug('Wrote inspector script to public/_devonz-inspector.js');
+  }
+
+  /**
+   * Ensure the inspector, capture, and html2canvas scripts are written to
+   * the project's `public/` directory.  Call this early — e.g. from
+   * `RuntimeClient.boot()` — so the scripts are available even for
+   * projects restored from disk that skip the `writeFile()` injection path.
+   */
+  async ensureInspectorReady(): Promise<void> {
+    await this.#ensureInspectorScriptFile();
+    await this.#ensureCaptureScriptFile();
+    await this.#ensureHtml2CanvasFile();
   }
 
   /**
@@ -280,6 +293,20 @@ export class LocalFileSystem implements RuntimeFileSystem {
   async writeFile(path: string, content: string | Uint8Array): Promise<void> {
     const resolved = this.#resolve(path);
     const dir = nodePath.dirname(resolved);
+
+    /*
+     * Guard: never allow external callers to overwrite the managed
+     * inspector / capture / html2canvas bundles with stale content
+     * (e.g. from the client-side FilesStore replay).
+     */
+    const baseName = nodePath.basename(path);
+    const managedFiles = new Set([INSPECTOR_SCRIPT_FILENAME, CAPTURE_SCRIPT_FILENAME, HTML2CANVAS_FILENAME]);
+
+    if (managedFiles.has(baseName)) {
+      logger.debug(`Skipping write for managed file: ${baseName}`);
+
+      return;
+    }
 
     // Auto-create parent directories
     await fs.mkdir(dir, { recursive: true });

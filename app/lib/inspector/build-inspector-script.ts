@@ -32,7 +32,8 @@ export function buildInspectorScript(): string {
     const parts: string[] = [];
 
     for (const file of MODULE_FILES) {
-      const content = readFileSync(join(root, file), 'utf-8');
+      const fullPath = join(root, file);
+      const content = readFileSync(fullPath, 'utf-8');
       parts.push(content);
     }
 
@@ -51,11 +52,16 @@ export function buildInspectorScript(): string {
 }
 
 /**
- * Returns the cached inspector script, building it lazily on the first call.
- * Subsequent calls return the cached result without re-reading files.
+ * Returns the inspector script, building it lazily on the first call.
+ *
+ * In development mode the source files are re-read on every call so that
+ * changes to `public/inspector/*.js` are picked up without a server restart.
+ * In production the script is built once and cached.
  */
 export function getInspectorScript(): string {
-  if (!hasBuilt) {
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  if (!hasBuilt || isDev) {
     buildInspectorScript();
   }
 

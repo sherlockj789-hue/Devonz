@@ -242,7 +242,14 @@ export class LocalRuntime implements RuntimeProvider {
     await fs.mkdir(this.#workdir, { recursive: true });
 
     // Replace filesystem with one scoped to the project
-    (this as { fs: RuntimeFileSystem }).fs = new LocalFileSystem(this.#workdir);
+    const projectFs = new LocalFileSystem(this.#workdir);
+    (this as { fs: RuntimeFileSystem }).fs = projectFs;
+
+    /*
+     * Ensure inspector / capture scripts are written for this project
+     * (handles restored projects that skip the writeFile injection path).
+     */
+    await projectFs.ensureInspectorReady();
 
     // Initialize git repo for version history (non-blocking, best-effort)
     try {
