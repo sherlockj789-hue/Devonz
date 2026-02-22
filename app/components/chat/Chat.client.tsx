@@ -46,7 +46,7 @@ import {
   unregisterPreviewAutoFixCallback,
 } from '~/utils/previewErrorHandler';
 import { createAutoFixHandler, handleFixSuccess, isAutoFixActive } from '~/lib/services/autoFixService';
-import { hasExceededMaxRetries, recordFixAttempt } from '~/lib/stores/autofix';
+import { hasExceededMaxRetries, recordFixAttempt, resetAutoFix } from '~/lib/stores/autofix';
 import { planActionAtom, clearPlanAction } from '~/lib/stores/plan';
 
 const logger = createScopedLogger('Chat');
@@ -283,6 +283,16 @@ export const ChatImpl = memo(
       },
       onError: (e) => {
         setFakeLoading(false);
+
+        /*
+         * If the stream errors during an auto-fix attempt, record the failure
+         * so the system doesn't get stuck with isFixing: true forever.
+         */
+        if (isAutoFixActive()) {
+          recordFixAttempt(false);
+          logger.warn('Auto-fix stream errored — recording as failed attempt');
+        }
+
         handleError(e, 'chat');
       },
       onFinish: (message, response) => {
@@ -433,6 +443,12 @@ export const ChatImpl = memo(
       stop();
       chatStore.setKey('aborted', true);
       workbenchStore.abortAllActions();
+
+      // If aborting during auto-fix, cancel the auto-fix session entirely
+      if (isAutoFixActive()) {
+        resetAutoFix();
+        logger.info('Auto-fix cancelled — user aborted the response');
+      }
 
       // Clear progress annotations so "Analysing Request" doesn't persist
       setData(undefined);
@@ -877,6 +893,11 @@ export const ChatImpl = memo(
       return () => {
         unregisterAutoFixCallback();
         unregisterPreviewAutoFixCallback();
+
+        // Reset auto-fix state so it doesn't stay stuck if component unmounts mid-fix
+        if (isAutoFixActive()) {
+          resetAutoFix();
+        }
       };
     }, []); // Empty deps - only run on mount/unmount
 
