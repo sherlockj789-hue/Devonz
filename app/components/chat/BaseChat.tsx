@@ -16,6 +16,7 @@ import { TemplateSection } from '~/components/chat/TemplateSection';
 import { RecentChats } from '~/components/chat/RecentChats';
 import type { ProviderInfo } from '~/types/model';
 import type { ActionAlert, SupabaseAlert, DeployAlert, LlmErrorAlertType } from '~/types/actions';
+import type { ImportChatFn } from '~/lib/persistence/db';
 import DeployChatAlert from '~/components/deploy/DeployAlert';
 import ChatAlert from './ChatAlert';
 import type { ModelInfo } from '~/lib/modules/llm/types';
@@ -61,7 +62,7 @@ interface BaseChatProps {
   sendMessage?: (event?: React.UIEvent, messageInput?: string) => void;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   enhancePrompt?: () => void;
-  importChat?: (description: string, messages: Message[]) => Promise<void>;
+  importChat?: ImportChatFn;
   exportChat?: () => void;
   uploadedFiles?: File[];
   setUploadedFiles?: (files: File[]) => void;

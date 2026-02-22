@@ -4,7 +4,7 @@ import { ImportFolderButton } from '~/components/chat/ImportFolderButton';
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
 import GitCloneButton from './GitCloneButton';
-import type { IChatMetadata } from '~/lib/persistence/db';
+import type { ImportChatFn } from '~/lib/persistence/db';
 
 type ChatData = {
   messages?: Message[];
@@ -12,7 +12,7 @@ type ChatData = {
 };
 
 interface LeftActionPanelProps {
-  importChat?: (description: string, messages: Message[], metadata?: IChatMetadata) => Promise<void>;
+  importChat?: ImportChatFn;
 }
 
 export function LeftActionPanel({ importChat }: LeftActionPanelProps) {

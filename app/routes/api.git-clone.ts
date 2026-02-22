@@ -105,7 +105,7 @@ const MAX_FILE_SIZE = 1024 * 1024;
  */
 async function walkDir(dir: string, base: string): Promise<Array<{ path: string; content: string }>> {
   const results: Array<{ path: string; content: string }> = [];
-  let entries: Awaited<ReturnType<typeof fs.readdir>>;
+  let entries: fsSync.Dirent[];
 
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });

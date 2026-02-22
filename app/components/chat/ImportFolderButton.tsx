@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import type { Message } from 'ai';
 import { toast } from 'react-toastify';
 import { MAX_FILES, isBinaryFile, shouldIncludeFile } from '~/utils/fileUtils';
 import { createChatFromFolder } from '~/utils/folderImport';
@@ -7,13 +6,14 @@ import { logStore } from '~/lib/stores/logs'; // Assuming logStore is imported f
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
 import { createScopedLogger } from '~/utils/logger';
+import type { ImportChatFn } from '~/lib/persistence/db';
 
 const logger = createScopedLogger('ImportFolder');
 
 interface ImportFolderButtonProps {
   className?: string;
   style?: React.CSSProperties;
-  importChat?: (description: string, messages: Message[]) => Promise<void>;
+  importChat?: ImportChatFn;
 }
 
 export const ImportFolderButton: React.FC<ImportFolderButtonProps> = ({ className, style, importChat }) => {

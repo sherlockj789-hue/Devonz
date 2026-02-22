@@ -8,6 +8,7 @@ import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/lib/hooks';
 import { resetVersionTracking } from '~/lib/hooks/useMessageParser';
 import { description, useChatHistory } from '~/lib/persistence';
 import { chatId } from '~/lib/persistence/useChatHistory';
+import type { ImportChatFn } from '~/lib/persistence/db';
 import { getProjectPlanMode, setProjectPlanMode } from '~/lib/persistence/projectPlanMode';
 import { bootRuntime } from '~/lib/runtime';
 import { chatStore, clearPendingChatMessage } from '~/lib/stores/chat';
@@ -98,7 +99,7 @@ const processSampledMessages = createSampler(
 interface ChatProps {
   initialMessages: Message[];
   storeMessageHistory: (messages: Message[]) => Promise<void>;
-  importChat: (description: string, messages: Message[]) => Promise<void>;
+  importChat: ImportChatFn;
   exportChat: () => void;
   description?: string;
 }

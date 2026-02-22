@@ -11,6 +11,14 @@ export interface IChatMetadata {
   netlifySiteId?: string;
 }
 
+/** Shared function type for importing a chat into the persistence layer. */
+export type ImportChatFn = (
+  description: string,
+  messages: Message[],
+  metadata?: IChatMetadata,
+  options?: { skipRedirect?: boolean },
+) => Promise<string | undefined>;
+
 const logger = createScopedLogger('Database');
 
 // this is used at the top level and never rejects

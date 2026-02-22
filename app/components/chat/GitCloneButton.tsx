@@ -9,7 +9,7 @@ import { LoadingOverlay } from '~/components/ui/LoadingOverlay';
 
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
-import type { IChatMetadata } from '~/lib/persistence/db';
+import type { ImportChatFn } from '~/lib/persistence/db';
 
 // Import the new repository selector components
 import { GitHubRepositorySelector } from '~/components/@settings/tabs/github/components/GitHubRepositorySelector';
@@ -47,7 +47,7 @@ const MAX_TOTAL_SIZE = 500 * 1024; // 500KB total limit
 interface GitCloneButtonProps {
   className?: string;
   style?: React.CSSProperties;
-  importChat?: (description: string, messages: Message[], metadata?: IChatMetadata) => Promise<void>;
+  importChat?: ImportChatFn;
 }
 
 export default function GitCloneButton({ importChat, className, style }: GitCloneButtonProps) {

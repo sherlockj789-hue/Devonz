@@ -3,13 +3,14 @@ import { toast } from 'react-toastify';
 import { ImportFolderButton } from '~/components/chat/ImportFolderButton';
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
+import type { ImportChatFn } from '~/lib/persistence/db';
 
 type ChatData = {
   messages?: Message[]; // Standard Devonz format
   description?: string; // Optional description
 };
 
-export function ImportButtons(importChat: ((description: string, messages: Message[]) => Promise<void>) | undefined) {
+export function ImportButtons(importChat: ImportChatFn | undefined) {
   return (
     <div className="flex flex-col items-center justify-center w-auto">
       <input
