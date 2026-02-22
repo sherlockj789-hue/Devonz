@@ -686,7 +686,7 @@ export const Versions = memo(() => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="ml-11 mb-2 rounded-lg text-xs overflow-hidden"
+                      className="mb-2 rounded-lg text-xs overflow-hidden"
                       style={{
                         background: 'var(--devonz-elements-bg-depth-3)',
                         border: '1px solid var(--devonz-elements-borderColor)',
@@ -705,7 +705,7 @@ export const Versions = memo(() => {
                             className="flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors"
                             style={{
                               background: 'var(--devonz-elements-button-secondary-background)',
-                              color: 'var(--devonz-elements-textTertiary)',
+                              color: 'var(--devonz-elements-textSecondary)',
                             }}
                             title="Download changed files"
                           >
@@ -717,7 +717,7 @@ export const Versions = memo(() => {
                             className="flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors"
                             style={{
                               background: 'var(--devonz-elements-button-secondary-background)',
-                              color: 'var(--devonz-elements-textTertiary)',
+                              color: 'var(--devonz-elements-textSecondary)',
                             }}
                             title="Download full project"
                           >
@@ -745,10 +745,10 @@ export const Versions = memo(() => {
                               >
                                 {status}
                               </span>
-                              <div className="i-ph:file-text text-xs text-devonz-elements-textTertiary" />
-                              <span className="font-mono text-devonz-elements-textTertiary truncate">{file}</span>
+                              <div className="i-ph:file-text text-xs text-devonz-elements-textSecondary" />
+                              <span className="font-mono text-devonz-elements-textPrimary truncate">{file}</span>
                               <motion.div
-                                className="i-ph:caret-right text-xs ml-auto text-devonz-elements-textTertiary"
+                                className="i-ph:caret-right text-xs ml-auto text-devonz-elements-textSecondary"
                                 animate={{ rotate: isOpen ? 90 : 0 }}
                                 transition={{ duration: 0.15 }}
                               />
