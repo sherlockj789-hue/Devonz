@@ -57,21 +57,50 @@ function stripCaptureScript(html: string): string {
   return html.replace(CAPTURE_BLOCK_RE, '');
 }
 
-/** Inject the capture script into HTML content (before </head> or </body>). */
+/** Inject the capture script and inspector tag into HTML content (before </head> or </body>). */
 function injectCaptureScript(html: string): string {
-  // Remove any existing injection first
+  // Remove any existing injections first
   let clean = stripCaptureScript(html);
+  clean = stripInspectorTag(clean);
+
+  // Build the combined injection (capture inline + inspector external)
+  const injection = INSPECTOR_JS ? `${CAPTURE_SCRIPT}\n${INSPECTOR_TAG}` : CAPTURE_SCRIPT;
 
   // Inject before </head> if present, otherwise before </body>, otherwise append
   if (clean.includes('</head>')) {
-    clean = clean.replace('</head>', `${CAPTURE_SCRIPT}\n</head>`);
+    clean = clean.replace('</head>', `${injection}\n</head>`);
   } else if (clean.includes('</body>')) {
-    clean = clean.replace('</body>', `${CAPTURE_SCRIPT}\n</body>`);
+    clean = clean.replace('</body>', `${injection}\n</body>`);
   } else {
-    clean += `\n${CAPTURE_SCRIPT}`;
+    clean += `\n${injection}`;
   }
 
   return clean;
+}
+
+/* ── Inspector script injection ─────────────────────────────────────────── */
+
+/**
+ * Build the inspector script from modular source files in `public/inspector/`.
+ * Falls back to the legacy monolithic `public/inspector-script.js` if the
+ * modular files are not available.
+ */
+import { getInspectorScript } from '~/lib/inspector/build-inspector-script';
+
+const INSPECTOR_JS = getInspectorScript();
+
+/** Name of the external inspector script written to the user's public/. */
+const INSPECTOR_SCRIPT_FILENAME = '_devonz-inspector.js';
+
+/** Tag injected into HTML files. Uses a data attribute as a stripping marker. */
+const INSPECTOR_TAG = `<script src="/${INSPECTOR_SCRIPT_FILENAME}" data-devonz-inspector="true"></script>`;
+
+/** Regex to strip the injected inspector script tag. */
+const INSPECTOR_TAG_RE = /\s*<script\s[^>]*data-devonz-inspector[^>]*><\/script>/g;
+
+/** Strip the inspector script tag from file content. */
+function stripInspectorTag(content: string): string {
+  return content.replace(INSPECTOR_TAG_RE, '');
 }
 
 /* ── Path 2: Root layout injection (Next.js App Router, etc.) ───────────── */
@@ -106,12 +135,16 @@ function stripLayoutCaptureTag(content: string): string {
   return content.replace(LAYOUT_CAPTURE_RE, '');
 }
 
-/** Inject the capture script reference into a root layout (before </body>). */
+/** Inject the capture and inspector script references into a root layout (before </body>). */
 function injectLayoutCaptureTag(content: string): string {
-  const clean = stripLayoutCaptureTag(content);
+  let clean = stripLayoutCaptureTag(content);
+  clean = stripInspectorTag(clean);
+
+  // Build the combined injection tags
+  const tags = INSPECTOR_JS ? `${LAYOUT_CAPTURE_TAG}\n${INSPECTOR_TAG}` : LAYOUT_CAPTURE_TAG;
 
   if (clean.includes('</body>')) {
-    return clean.replace('</body>', `${LAYOUT_CAPTURE_TAG}\n</body>`);
+    return clean.replace('</body>', `${tags}\n</body>`);
   }
 
   return clean;
@@ -128,6 +161,7 @@ function injectLayoutCaptureTag(content: string): string {
 export class LocalFileSystem implements RuntimeFileSystem {
   readonly #root: string;
   #captureScriptWritten = false;
+  #inspectorScriptWritten = false;
 
   constructor(projectRoot: string) {
     this.#root = nodePath.resolve(projectRoot);
@@ -152,6 +186,25 @@ export class LocalFileSystem implements RuntimeFileSystem {
     logger.debug('Wrote external capture script to public/_devonz-capture.js');
   }
 
+  /**
+   * Write the inspector script to public/_devonz-inspector.js.
+   * Skips if already written this session or if the inspector source is unavailable.
+   */
+  async #ensureInspectorScriptFile(): Promise<void> {
+    if (this.#inspectorScriptWritten || !INSPECTOR_JS) {
+      return;
+    }
+
+    const publicDir = nodePath.join(this.#root, 'public');
+    await fs.mkdir(publicDir, { recursive: true });
+
+    const inspectorFile = nodePath.join(publicDir, INSPECTOR_SCRIPT_FILENAME);
+    await fs.writeFile(inspectorFile, INSPECTOR_JS, 'utf-8');
+    this.#inspectorScriptWritten = true;
+
+    logger.debug('Wrote inspector script to public/_devonz-inspector.js');
+  }
+
   /** Resolve a relative path to an absolute path within the project root. */
   #resolve(relativePath: string): string {
     if (!isSafePath(relativePath)) {
@@ -170,16 +223,21 @@ export class LocalFileSystem implements RuntimeFileSystem {
 
   async readFile(path: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
     const resolved = this.#resolve(path);
-    const content = await fs.readFile(resolved, { encoding });
+    let content = await fs.readFile(resolved, { encoding });
 
     // Strip injected capture script so editor/git see clean content
     if (isIndexHtml(path) && content.includes(CAPTURE_MARKER_START)) {
-      return stripCaptureScript(content);
+      content = stripCaptureScript(content);
     }
 
     // Strip injected capture tag from root layout files
     if (content.includes('data-devonz-capture') && isRootLayout(path, content)) {
-      return stripLayoutCaptureTag(content);
+      content = stripLayoutCaptureTag(content);
+    }
+
+    // Strip injected inspector tag so editor/git see clean content
+    if (content.includes('data-devonz-inspector')) {
+      content = stripInspectorTag(content);
     }
 
     return content;
@@ -205,12 +263,14 @@ export class LocalFileSystem implements RuntimeFileSystem {
       let finalContent = content;
 
       if (isIndexHtml(path)) {
-        // Path 1: inject inline capture script into static HTML entry points
+        // Path 1: inject inline capture script + external inspector into static HTML
         finalContent = injectCaptureScript(content);
+        await this.#ensureInspectorScriptFile();
       } else if (isRootLayout(path, content)) {
-        // Path 2: inject external script reference into framework root layouts
+        // Path 2: inject external script references into framework root layouts
         finalContent = injectLayoutCaptureTag(content);
         await this.#ensureCaptureScriptFile();
+        await this.#ensureInspectorScriptFile();
       }
 
       await fs.writeFile(resolved, finalContent, 'utf-8');

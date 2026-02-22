@@ -1,0 +1,68 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+/**
+ * Ordered list of inspector module files that get concatenated into a single IIFE.
+ * Core must load first, then error capture, then screenshot capture.
+ */
+const MODULE_FILES = [
+  'public/inspector/inspector-core.js',
+  'public/inspector/error-capture.js',
+  'public/inspector/screenshot-capture.js',
+] as const;
+
+let cachedScript = '';
+let hasBuilt = false;
+
+/**
+ * Reads the inspector module files from `public/inspector/` and concatenates
+ * them into a single IIFE string suitable for injection into the preview iframe.
+ *
+ * Uses `process.cwd()` to resolve paths (consistent with existing server-side
+ * file resolution in `local-filesystem.ts`).
+ *
+ * @returns The concatenated IIFE string, or an empty string if any file is missing.
+ */
+export function buildInspectorScript(): string {
+  try {
+    const root = process.cwd();
+    const parts: string[] = [];
+
+    for (const file of MODULE_FILES) {
+      const content = readFileSync(join(root, file), 'utf-8');
+      parts.push(content);
+    }
+
+    const script = `(function() {\n${parts.join('\n')}\n})();`;
+
+    cachedScript = script;
+    hasBuilt = true;
+
+    return script;
+  } catch {
+    cachedScript = '';
+    hasBuilt = true;
+
+    return '';
+  }
+}
+
+/**
+ * Returns the cached inspector script, building it lazily on the first call.
+ * Subsequent calls return the cached result without re-reading files.
+ */
+export function getInspectorScript(): string {
+  if (!hasBuilt) {
+    buildInspectorScript();
+  }
+
+  return cachedScript;
+}
+
+/**
+ * Returns `true` if the inspector script was successfully built
+ * (i.e. all three module files were found and concatenated).
+ */
+export function isInspectorAvailable(): boolean {
+  return getInspectorScript().length > 0;
+}
