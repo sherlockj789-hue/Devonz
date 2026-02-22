@@ -187,7 +187,7 @@ export class ImportExportService {
         _meta: {
           exportDate: new Date().toISOString(),
           version: '2.0',
-          appVersion: process.env.NEXT_PUBLIC_VERSION || 'unknown',
+          appVersion: import.meta.env?.VITE_APP_VERSION || '1.0.0',
         },
       };
     } catch (error) {
