@@ -154,7 +154,7 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({ temp
         return (
           <div
             className="w-full h-full flex flex-col items-center justify-center gap-4"
-            style={{ backgroundColor: '#0a0a0a', minHeight: '400px' }}
+            style={{ backgroundColor: '#0a0a0a', minHeight: '600px' }}
           >
             <div className="i-ph:warning-circle text-4xl text-[#9ca3af]" />
             <p className="text-sm text-[#9ca3af]">This site cannot be previewed inline.</p>
@@ -171,7 +171,7 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({ temp
       }
 
       return (
-        <div className="relative w-full h-full" style={{ backgroundColor: '#0a0a0a', minHeight: '400px' }}>
+        <div className="relative w-full h-full" style={{ backgroundColor: '#0a0a0a', minHeight: '600px' }}>
           {iframeLoading && (
             <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
               <div className="flex flex-col items-center gap-3">
@@ -184,7 +184,7 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({ temp
             ref={iframeRef}
             src={vercelUrl}
             title={`${template.name} live preview`}
-            className="w-full h-full min-h-[400px] border-0"
+            className="w-full h-full min-h-[600px] border-0"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             onError={handleIframeError}
           />
@@ -195,7 +195,7 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({ temp
     return (
       <div
         className="w-full h-full flex flex-col items-center justify-center gap-6"
-        style={{ backgroundColor: '#0a0a0a', minHeight: '400px' }}
+        style={{ backgroundColor: '#0a0a0a', minHeight: '600px' }}
       >
         <div className={`${template.icon} text-5xl text-cyan-400`} />
         <p className="text-lg font-medium text-white">{template.name}</p>
@@ -213,12 +213,12 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({ temp
       role="dialog"
       aria-modal="true"
       aria-labelledby="template-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div
         ref={modalRef}
-        className="relative w-full max-w-4xl max-h-[90vh] rounded-xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-[90vw] max-h-[95vh] rounded-xl overflow-hidden flex flex-col"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #333333' }}
       >
         {/* Header */}

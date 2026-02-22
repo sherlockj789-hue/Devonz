@@ -4,9 +4,11 @@ import { useSearchParams, useNavigate } from '@remix-run/react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Header } from '~/components/header/Header';
 import type { ShowcaseTemplate, TemplateCategory } from '~/types/showcase-template';
-import { TEMPLATE_CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS } from '~/types/showcase-template';
+import { TEMPLATE_CATEGORIES, CATEGORY_LABELS } from '~/types/showcase-template';
 import { loadShowcaseTemplates } from '~/utils/showcase-templates';
 import { TemplatePreviewModal } from '~/components/templates/TemplatePreviewModal';
+
+// ── Route metadata ──────────────────────────────────────────────────────────
 
 export const meta: MetaFunction = () => {
   return [
@@ -16,6 +18,8 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader = () => json({});
+
+// ── Gallery ─────────────────────────────────────────────────────────────────
 
 function TemplatesGallery() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,7 +37,6 @@ function TemplatesGallery() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Handle ?selected= query param
   useEffect(() => {
     const selectedId = searchParams.get('selected');
 
@@ -55,6 +58,7 @@ function TemplatesGallery() {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
+
       result = result.filter(
         (t) =>
           t.name.toLowerCase().includes(q) ||
@@ -69,7 +73,6 @@ function TemplatesGallery() {
   const handleCloseModal = useCallback(() => {
     setSelectedTemplate(null);
 
-    // Remove ?selected= from URL
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('selected');
     setSearchParams(newParams, { replace: true });
@@ -112,7 +115,6 @@ function TemplatesGallery() {
 
       {/* Search & Filters */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-6">
-        {/* Search Bar */}
         <div className="relative mb-4">
           <div className="i-ph:magnifying-glass text-lg text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -125,7 +127,6 @@ function TemplatesGallery() {
           />
         </div>
 
-        {/* Category Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 modern-scrollbar">
           {TEMPLATE_CATEGORIES.map((cat) => {
             const isActive = activeCategory === cat.id;
@@ -163,82 +164,96 @@ function TemplatesGallery() {
         )}
       </div>
 
-      {/* Preview Modal */}
       <TemplatePreviewModal template={selectedTemplate} onClose={handleCloseModal} />
     </div>
   );
 }
 
-// Gallery card with screenshot preview
+// ── Card colors ─────────────────────────────────────────────────────────────
+
+const CATEGORY_BADGE_COLORS: Record<string, { text: string; bg: string }> = {
+  'landing-page': { text: '#22d3ee', bg: 'rgba(34, 211, 238, 0.12)' },
+  portfolio: { text: '#818cf8', bg: 'rgba(129, 140, 248, 0.12)' },
+  'online-store': { text: '#4ade80', bg: 'rgba(74, 222, 128, 0.12)' },
+  dashboard: { text: '#fb923c', bg: 'rgba(251, 146, 60, 0.12)' },
+  saas: { text: '#c084fc', bg: 'rgba(192, 132, 252, 0.12)' },
+  'ai-app': { text: '#f472b6', bg: 'rgba(244, 114, 182, 0.12)' },
+};
+
+// ── Gallery card (static screenshot thumbnail) ──────────────────────────────
+
 interface TemplateGalleryCardProps {
   template: ShowcaseTemplate;
   onClick: (template: ShowcaseTemplate) => void;
 }
 
 function TemplateGalleryCard({ template, onClick }: TemplateGalleryCardProps) {
-  const iconColor = CATEGORY_COLORS[template.category] || 'text-cyan-400';
+  const [imgError, setImgError] = useState(false);
+  const badgeColors = CATEGORY_BADGE_COLORS[template.category] || { text: '#9ca3af', bg: 'rgba(156, 163, 175, 0.12)' };
+  const screenshotUrl = `/screenshots/${template.id}.png`;
 
   return (
     <button
       onClick={() => onClick(template)}
-      className="group text-left rounded-xl overflow-hidden transition-all duration-300 bg-[#1a1a1a] border border-[#333333] hover:border-[#444444] hover:-translate-y-0.5 hover:shadow-lg"
+      className="group text-left rounded-xl overflow-hidden transition-all duration-300 bg-[#1a1a1a] border border-[#333333] hover:border-[#555555] hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30"
     >
-      {/* Preview Thumbnail */}
-      <div className="relative aspect-[16/10] overflow-hidden" style={{ backgroundColor: '#0a0a0a' }}>
-        {template.screenshotUrl ? (
+      {/* Screenshot preview */}
+      <div className="relative aspect-[16/10] overflow-hidden" style={{ backgroundColor: '#141414' }}>
+        {!imgError ? (
           <img
-            src={template.screenshotUrl}
+            src={screenshotUrl}
             alt={`${template.name} preview`}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-
-              const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-
-              if (fallback) {
-                fallback.style.display = 'flex';
-              }
-            }}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover object-top"
+            onError={() => setImgError(true)}
           />
-        ) : null}
-        <div
-          className="w-full h-full flex flex-col items-center justify-center gap-2 absolute inset-0"
-          style={{
-            backgroundColor: '#0a0a0a',
-            display: template.screenshotUrl ? 'none' : 'flex',
-          }}
-        >
-          <div className={`${template.icon} text-4xl text-cyan-400`} />
-          <span className="text-xs" style={{ color: '#9ca3af' }}>
-            Preview
-          </span>
-        </div>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <div className={`${template.icon} text-4xl`} style={{ color: badgeColors.text }} />
+            <span className="text-xs text-[#666]">Preview unavailable</span>
+          </div>
+        )}
+
+        {/* Bottom gradient overlay */}
+        {!imgError && (
+          <div
+            className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+            style={{ background: 'linear-gradient(to top, #1a1a1a 0%, transparent 100%)' }}
+          />
+        )}
+
         {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-white/20 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#3b82f6]/90 backdrop-blur-sm shadow-lg">
             <div className="i-ph:eye text-base" />
             Preview
           </div>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className={`${template.icon} ${iconColor} text-lg flex-shrink-0`} />
-          <h3 className="text-sm font-semibold text-white truncate">{template.name}</h3>
+      {/* Card body */}
+      <div className="p-5">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className={`${template.icon} text-lg flex-shrink-0`} style={{ color: badgeColors.text }} />
+          <h3 className="text-[15px] font-semibold text-white truncate">{template.name}</h3>
         </div>
-        <p className="text-xs text-[#9ca3af] line-clamp-2 mb-3">{template.description}</p>
+        <p className="text-xs text-[#9ca3af] line-clamp-2 mb-3 leading-relaxed">{template.description}</p>
         <div className="flex items-center justify-between">
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#2a2a2a', color: '#9ca3af' }}>
+          <span
+            className="text-xs px-2.5 py-1 rounded-full font-medium"
+            style={{ backgroundColor: badgeColors.bg, color: badgeColors.text }}
+          >
             {CATEGORY_LABELS[template.category] || template.category}
           </span>
-          <div className="i-ph:arrow-right text-sm text-[#9ca3af] opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="i-ph:arrow-right text-sm text-[#666] opacity-0 group-hover:opacity-100 transition-opacity group-hover:text-white" />
         </div>
       </div>
     </button>
   );
 }
+
+// ── Route export ────────────────────────────────────────────────────────────
 
 export default function TemplatesRoute() {
   return (
