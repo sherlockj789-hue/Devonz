@@ -214,9 +214,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (shouldOptimizeContext) {
-          logger.debug('Generating Chat Summary');
+          logger.debug('Generating Chat Summary + Selecting Context (parallel)');
 
-          const summaryStart = performance.now();
+          const optimizationStart = performance.now();
           dataStream.writeData({
             type: 'progress',
             label: 'summary',
@@ -225,30 +225,62 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             message: 'Analysing Request',
           } satisfies ProgressAnnotation);
 
-          // Create a summary of the chat
           logger.debug(`Messages count: ${processedMessages.length}`);
 
-          try {
-            summary = await createSummary({
-              messages: [...processedMessages],
-              env: context.cloudflare?.env,
-              apiKeys,
-              providerSettings,
-              promptId,
-              contextOptimization,
-              onFinish(resp) {
-                if (resp.usage) {
-                  logger.debug('createSummary token usage', JSON.stringify(resp.usage));
-                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                }
-              },
-            });
-          } catch (summaryError) {
-            logger.warn('createSummary failed — continuing without summary:', summaryError);
-            summary = undefined;
-          }
+          /*
+           * Run createSummary and selectContext in parallel.
+           * selectContext uses the summary as a hint, but works without one.
+           * Running them concurrently saves 5-10s per request.
+           */
+          const summaryPromise = createSummary({
+            messages: [...processedMessages],
+            env: context.cloudflare?.env,
+            apiKeys,
+            providerSettings,
+            promptId,
+            contextOptimization,
+            onFinish(resp) {
+              if (resp.usage) {
+                logger.debug('createSummary token usage', JSON.stringify(resp.usage));
+                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+              }
+            },
+          }).catch((err) => {
+            logger.warn('createSummary failed — continuing without summary:', err);
+
+            return undefined;
+          });
+
+          const contextPromise = selectContext({
+            messages: [...processedMessages],
+            env: context.cloudflare?.env,
+            apiKeys,
+            files: files || {},
+            providerSettings,
+            promptId,
+            contextOptimization,
+            summary: '', // summary runs in parallel — selectContext works without one
+            onFinish(resp) {
+              if (resp.usage) {
+                logger.debug('selectContext token usage', JSON.stringify(resp.usage));
+                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+              }
+            },
+          }).catch((err) => {
+            logger.warn('selectContext failed — falling back to all files:', err);
+
+            return files;
+          });
+
+          const [summaryResult, contextResult] = await Promise.all([summaryPromise, contextPromise]);
+
+          summary = summaryResult;
+          filteredFiles = contextResult;
+
           dataStream.writeData({
             type: 'progress',
             label: 'summary',
@@ -263,51 +295,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               summary,
               chatId: processedMessages.slice(-1)?.[0]?.id,
             } as ContextAnnotation);
-          }
-
-          logger.info(`⏱ createSummary took ${(performance.now() - summaryStart).toFixed(0)}ms`);
-
-          // Update context buffer
-          logger.debug('Updating Context Buffer');
-
-          const contextStart = performance.now();
-          dataStream.writeData({
-            type: 'progress',
-            label: 'context',
-            status: 'in-progress',
-            order: progressCounter++,
-            message: 'Determining Files to Read',
-          } satisfies ProgressAnnotation);
-
-          /*
-           * Select context files — wrapped in try/catch so a malformed LLM
-           * response (e.g. missing <updateContextBuffer> tags) doesn't crash
-           * the entire chat stream.  Falls back to all project files on failure.
-           */
-          logger.debug(`Messages count: ${processedMessages.length}`);
-
-          try {
-            filteredFiles = await selectContext({
-              messages: [...processedMessages],
-              env: context.cloudflare?.env,
-              apiKeys,
-              files: files || {},
-              providerSettings,
-              promptId,
-              contextOptimization,
-              summary: summary ?? '',
-              onFinish(resp) {
-                if (resp.usage) {
-                  logger.debug('selectContext token usage', JSON.stringify(resp.usage));
-                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                }
-              },
-            });
-          } catch (contextError) {
-            logger.warn('selectContext failed — falling back to all files:', contextError);
-            filteredFiles = files;
           }
 
           if (filteredFiles) {
@@ -335,8 +322,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             message: 'Code Files Selected',
           } satisfies ProgressAnnotation);
 
-          logger.info(`⏱ selectContext took ${(performance.now() - contextStart).toFixed(0)}ms`);
-          logger.info(`⏱ Total context optimization: ${(performance.now() - summaryStart).toFixed(0)}ms`);
+          logger.info(
+            `⏱ Total context optimization (parallel): ${(performance.now() - optimizationStart).toFixed(0)}ms`,
+          );
         }
 
         // Merge MCP tools with agent tools when agent mode is enabled

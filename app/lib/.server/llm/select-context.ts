@@ -1,4 +1,5 @@
 import { generateText, type CoreTool, type GenerateTextResult, type Message } from 'ai';
+import { createHash } from 'node:crypto';
 import ignore from 'ignore';
 import type { IProviderSetting } from '~/types/model';
 import { IGNORE_PATTERNS, type FileMap } from './constants';
@@ -16,6 +17,15 @@ import { resolveModel } from './resolve-model';
 
 const ig = ignore().add(IGNORE_PATTERNS);
 const logger = createScopedLogger('select-context');
+
+/**
+ * In-memory cache for context selection keyed by a hash of the user's
+ * last message + available file paths.  Prevents redundant LLM calls
+ * when consecutive messages target the same set of files.
+ */
+const contextCache = new Map<string, { files: FileMap; timestamp: number }>();
+const CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CONTEXT_CACHE_MAX_SIZE = 30;
 
 export async function selectContext(props: {
   messages: Message[];
@@ -106,6 +116,27 @@ export async function selectContext(props: {
   if (!lastUserMessage) {
     throw new Error('No user message found');
   }
+
+  // --- Hash-based cache: skip LLM call if same user message + same file list ---
+  const cacheInput = extractTextContent(lastUserMessage) + '|' + filePaths.sort().join(',');
+  const cacheKey = createHash('sha256').update(cacheInput).digest('hex');
+
+  // Evict stale entries
+  for (const [key, entry] of contextCache) {
+    if (Date.now() - entry.timestamp > CONTEXT_CACHE_TTL_MS) {
+      contextCache.delete(key);
+    }
+  }
+
+  const cached = contextCache.get(cacheKey);
+
+  if (cached) {
+    logger.info(`Context cache HIT — skipping LLM call (hash: ${cacheKey.slice(0, 8)}…)`);
+
+    return cached.files;
+  }
+
+  logger.info(`Context cache MISS — calling LLM (hash: ${cacheKey.slice(0, 8)}…)`);
 
   // select files from the list of code file from the project that might be useful for the current request from the user
   const resp = await generateText({
@@ -218,6 +249,17 @@ export async function selectContext(props: {
   if (totalFiles === 0) {
     logger.warn('No files selected for context — returning empty context');
   }
+
+  // Store in cache (evict oldest if over cap)
+  if (contextCache.size >= CONTEXT_CACHE_MAX_SIZE) {
+    const oldestKey = contextCache.keys().next().value;
+
+    if (oldestKey !== undefined) {
+      contextCache.delete(oldestKey);
+    }
+  }
+
+  contextCache.set(cacheKey, { files: mergedFiles, timestamp: Date.now() });
 
   return mergedFiles;
 

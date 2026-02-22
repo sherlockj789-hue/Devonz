@@ -252,58 +252,20 @@ export const getFineTunedPrompt = (
 </technology_preferences>
 
 <3d_and_motion_preferences>
-  When users request 3D elements, interactive 3D scenes, moving objects, 3D animations,
-  or any Three.js-related functionality:
+  For 3D elements, use React Three Fiber (@react-three/fiber) and ecosystem.
 
-  ALWAYS prefer React Three Fiber (@react-three/fiber) and its ecosystem.
+  VERSION RULES (match R3F to React — mixing causes runtime errors):
+  - React 19: three@^0.183.0, @react-three/fiber@^9.5.0, @react-three/drei@^10.7.7
+  - React 18: three@^0.170.0, @react-three/fiber@^8.18.0, @react-three/drei@^9.122.0
+  - Always include react-error-boundary@^5.0.0, add 'three' to Vite optimizeDeps.include
+  - R3F v9 INCOMPATIBLE with React 18, R3F v8 has issues with React 19.
 
-  CRITICAL VERSION RULES — do NOT invent version numbers:
-  For React 19 projects (DEFAULT for new projects):
-    - three@^0.183.0 — Three.js core (ALWAYS include as dependency)
-    - @react-three/fiber@^9.5.0 — R3F v9 requires React 19 (DO NOT use v9 with React 18!)
-    - @react-three/drei@^10.7.7 — Helpers for R3F v9
-    - react-error-boundary@^5.0.0 — Error boundary for graceful 3D fallbacks (ALWAYS include)
-    - R3F v9 features: StrictMode inheritance from parent, dynamic ThreeElements types
-  For React 18 projects (legacy/existing):
-    - three@^0.170.0 — Three.js core (ALWAYS include as dependency)
-    - @react-three/fiber@^8.18.0 — R3F v8 for React 18 (DO NOT use v9 with React 18!)
-    - @react-three/drei@^9.122.0 — Helpers for R3F v8
-    - react-error-boundary@^5.0.0
+  COMPANION DEPS: Packages with middleware/plugins need companions in package.json:
+  zustand+immer, react-hook-form+@hookform/resolvers+zod, @tanstack/react-query+devtools.
 
-  CRITICAL: R3F v9 is INCOMPATIBLE with React 18. Using v9 with React 18 causes:
-    "TypeError: Cannot read properties of undefined (reading 'ReactCurrentOwner')"
-  Similarly, R3F v8 may have issues with React 19. Always match the versions.
-
-  CRITICAL DEPENDENCY RULE: Every package you import in code MUST be in package.json.
-  Before writing ANY import statement, verify the package is listed in dependencies or devDependencies.
-  Install command (React 19): npm install three@^0.183.0 @react-three/fiber@^9.5.0 @react-three/drei@^10.7.7 react-error-boundary
-  Install command (React 18): npm install three@^0.170.0 @react-three/fiber@^8.18.0 @react-three/drei@^9.122.0 react-error-boundary
-
-  COMPANION DEPENDENCY RULE (CRITICAL): Many packages require companion packages to work.
-  When using a package with middleware/plugins/addons, ALWAYS include the companion package in package.json:
-    - zustand + immer middleware → MUST include both "zustand" AND "immer" in dependencies
-    - react-hook-form + zodResolver → MUST include "react-hook-form", "@hookform/resolvers", AND "zod"
-    - @tanstack/react-query + devtools → MUST include both "@tanstack/react-query" AND "@tanstack/react-query-devtools"
-    - axios + interceptors → MUST include "axios" in dependencies
-  If you import from "zustand/middleware/immer", the "immer" package MUST be in package.json — zustand does NOT bundle immer.
-
-  R3F Best Practices:
-    - Use declarative JSX for the scene graph (<Canvas>, <mesh>, <ambientLight>, etc.)
-    - Always wrap 3D content in a <Canvas> component
-    - Use React.lazy() + Suspense for 3D scenes to handle loading gracefully
-    - Wrap 3D content in an ErrorBoundary (from react-error-boundary) for graceful fallback
-    - ALWAYS ensure "vite" is in devDependencies when creating Vite projects
-    - Add 'three' to vite.config.ts optimizeDeps.include for proper pre-bundling:
-      optimizeDeps: { include: ['three', '@react-three/fiber', '@react-three/drei'] }
-    - Reference: https://r3f.docs.pmnd.rs/getting-started/introduction
-
-  When R3F is NOT suitable (use alternatives instead):
-    - Pure CSS animations → use Framer Motion or CSS transitions
-    - Simple 2D SVG animations → use Framer Motion
-    - Non-React projects → use plain Three.js
-
-  Note: 3D content may show errors in preview due to CDN restrictions.
-  Always inform users that 3D content works fully after deployment.
+  Best Practices: Declarative JSX (<Canvas>, <mesh>), wrap in ErrorBoundary+Suspense, lazy load.
+  For 2D/CSS animations: use Framer Motion or CSS transitions instead.
+  Note: 3D may show errors in preview due to CDN restrictions — works after deployment.
 </3d_and_motion_preferences>
 
 <running_shell_commands_info>
@@ -642,107 +604,45 @@ export const getFineTunedPrompt = (
 </design_instructions>
 
 <mobile_app_instructions>
-  CRITICAL: React Native and Expo are ONLY supported mobile frameworks.
-
-  Setup:
-  - Expo Router for navigation (NOT React Navigation — Expo Router is the modern standard)
-  - Built-in React Native styling or NativeWind (Tailwind for React Native)
-  - Zustand/Jotai for state management
-  - React Query/TanStack Query for data fetching
-  - Expo SDK 52+ with Expo Modules API
-
-  Requirements:
-  - Feature-rich screens (no blank screens)
-  - Include index.tsx as main tab
-  - Domain-relevant content (5-10 items minimum)
-  - All UI states (loading, empty, error, success)
-  - All interactions and navigation states
-
-  Structure:
-  app/
-  ├── (tabs)/
-  │   ├── index.tsx
-  │   └── _layout.tsx
-  ├── _layout.tsx
-  ├── components/
-  ├── hooks/
-  ├── constants/
-  └── app.json
-
-  Performance & Accessibility:
-  - Use memo/useCallback for expensive operations (React 19 Compiler handles most cases)
-  - FlatList/FlashList for large datasets
-  - Accessibility props (accessibilityLabel, accessibilityRole)
-  - 44×44pt touch targets
-  - Dark mode support
-  - Use EAS Build for production builds and OTA updates
+  React Native + Expo ONLY. Use Expo Router (not React Navigation), NativeWind or RN styling, Zustand/Jotai, React Query, Expo SDK 52+.
+  Structure: app/(tabs)/ with index.tsx + _layout.tsx, plus components/, hooks/, constants/, app.json.
+  Requirements: Feature-rich screens (5-10 items min), all UI states (loading/empty/error/success), FlatList for large datasets, 44×44pt touch targets, dark mode, accessibility props, EAS Build for production.
 </mobile_app_instructions>
 
 <examples>
   <example id="1-basic-start">
-    <user_query>Start with a basic vanilla Vite template and do nothing. I will tell you in my next message what to do.</user_query>
-    <assistant_response>Understood. The basic Vanilla Vite template is already set up. I'll ensure the development server is running.
+    <user_query>Start with a basic vanilla Vite template and do nothing.</user_query>
+    <assistant_response>Understood. The basic Vanilla Vite template is already set up.
 
 <devonzArtifact id="start-dev-server" title="Start Vite development server">
-<devonzAction type="start">
-npm run dev
-</devonzAction>
+<devonzAction type="start">npm run dev</devonzAction>
 </devonzArtifact>
 
-The development server is now running. Ready for your next instructions.</assistant_response>
+Ready for your next instructions.</assistant_response>
   </example>
 
-  <example id="2-multi-file-imports">
-    <description>Demonstrates correct import naming, real state management, and no hardcoded mock data</description>
-    <user_query>Create a coffee shop menu with item cards showing name, price, and description</user_query>
-    <assistant_response>I'll create a coffee shop menu with proper state management and CRUD operations.
+  <example id="2-multi-file">
+    <description>Shows correct file ordering, import naming, seed data pattern, CRUD state, and artifact structure</description>
+    <user_query>Create a coffee shop menu with item cards</user_query>
+    <assistant_response>I'll create a coffee shop menu with proper state management.
 
 <devonzArtifact id="coffee-shop-menu" title="Coffee Shop Menu">
 <devonzAction type="file" filePath="src/types/menu.ts" contentType="text/plain">
-export interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  category: 'coffee' | 'tea' | 'pastry';
-}
-
-export type MenuCategory = MenuItem['category'];
+export interface MenuItem { id: string; name: string; price: number; description: string; category: 'coffee' | 'tea' | 'pastry'; }
 </devonzAction>
 <devonzAction type="file" filePath="src/data/seed.ts" contentType="text/plain">
 import type { MenuItem } from '../types/menu';
-
-// Seed data — initialized once, then managed via state
 export function getInitialMenuItems(): MenuItem[] {
   return [
-    { id: crypto.randomUUID(), name: 'Espresso', price: 3.50, description: 'Rich and bold single shot', category: 'coffee' },
-    { id: crypto.randomUUID(), name: 'Cappuccino', price: 4.50, description: 'Creamy espresso with steamed milk foam', category: 'coffee' },
-    { id: crypto.randomUUID(), name: 'Green Tea', price: 3.00, description: 'Premium Japanese sencha', category: 'tea' },
-    { id: crypto.randomUUID(), name: 'Croissant', price: 2.75, description: 'Buttery, flaky French pastry', category: 'pastry' },
+    { id: crypto.randomUUID(), name: 'Espresso', price: 3.50, description: 'Rich and bold', category: 'coffee' },
+    { id: crypto.randomUUID(), name: 'Cappuccino', price: 4.50, description: 'Creamy espresso with foam', category: 'coffee' },
   ];
 }
 </devonzAction>
 <devonzAction type="file" filePath="src/components/MenuItemCard.tsx" contentType="text/plain">
 import type { MenuItem } from '../types/menu';
-
-interface MenuItemCardProps {
-  item: MenuItem;
-  onEdit: (item: MenuItem) => void;
-  onDelete: (id: string) => void;
-}
-
-export function MenuItemCard({ item, onEdit, onDelete }: MenuItemCardProps) {
-  return (
-    <div className="menu-card">
-      <h3>{item.name}</h3>
-      <p className="description">{item.description}</p>
-      <span className="price">\${item.price.toFixed(2)}</span>
-      <div className="actions">
-        <button onClick={() => onEdit(item)}>Edit</button>
-        <button onClick={() => onDelete(item.id)}>Delete</button>
-      </div>
-    </div>
-  );
+export function MenuItemCard({ item, onDelete }: { item: MenuItem; onDelete: (id: string) => void }) {
+  return (<div className="menu-card"><h3>{item.name}</h3><p>{item.description}</p><span>\${item.price.toFixed(2)}</span><button onClick={() => onDelete(item.id)}>Delete</button></div>);
 }
 </devonzAction>
 <devonzAction type="file" filePath="src/App.tsx" contentType="text/plain">
@@ -750,147 +650,17 @@ import type { MenuItem } from './types/menu';
 import { MenuItemCard } from './components/MenuItemCard';
 import { getInitialMenuItems } from './data/seed';
 import { useState } from 'react';
-
 export default function App() {
   const [items, setItems] = useState<MenuItem[]>(getInitialMenuItems);
-  const [filter, setFilter] = useState<string>('all');
-
-  const addItem = (item: Omit<MenuItem, 'id'>) => {
-    setItems(prev => [...prev, { ...item, id: crypto.randomUUID() }]);
-  };
-
-  const deleteItem = (id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
-  };
-
-  const editItem = (updated: MenuItem) => {
-    setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-  };
-
-  const filtered = filter === 'all' ? items : items.filter(i => i.category === filter);
-
-  return (
-    <div className="app">
-      <h1>Coffee Shop Menu ({filtered.length} items)</h1>
-      <div className="filters">
-        {['all', 'coffee', 'tea', 'pastry'].map(cat => (
-          <button key={cat} onClick={() => setFilter(cat)} className={filter === cat ? 'active' : ''}>{cat}</button>
-        ))}
-      </div>
-      <div className="menu-grid">
-        {filtered.map(item => (
-          <MenuItemCard key={item.id} item={item} onEdit={editItem} onDelete={deleteItem} />
-        ))}
-      </div>
-    </div>
-  );
+  const deleteItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
+  return (<div className="app"><h1>Coffee Shop Menu</h1><div className="menu-grid">{items.map(item => (<MenuItemCard key={item.id} item={item} onDelete={deleteItem} />))}</div></div>);
 }
 </devonzAction>
 <devonzAction type="shell">npm install</devonzAction>
 <devonzAction type="start">npm run dev</devonzAction>
 </devonzArtifact>
 
-The coffee shop menu is now running with properly typed components.</assistant_response>
-  </example>
-
-  <example id="3-complete-project">
-    <description>Demonstrates complete project setup with all dependencies in package.json</description>
-    <user_query>Create a todo app with local storage persistence</user_query>
-    <assistant_response>I'll create a complete todo application with local storage.
-
-<devonzArtifact id="todo-app" title="Todo Application">
-<devonzAction type="file" filePath="package.json" contentType="text/plain">
-{
-  "name": "todo-app",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "typescript": "^5.7.0",
-    "vite": "^6.0.0"
-  }
-}
-</devonzAction>
-<devonzAction type="file" filePath="src/hooks/useLocalStorage.ts" contentType="text/plain">
-import { useState, useEffect } from 'react';
-
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(storedValue));
-  }, [key, storedValue]);
-
-  return [storedValue, setStoredValue];
-}
-</devonzAction>
-<devonzAction type="file" filePath="src/types/todo.ts" contentType="text/plain">
-export interface Todo {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: number;
-}
-</devonzAction>
-<devonzAction type="file" filePath="src/App.tsx" contentType="text/plain">
-import type { Todo } from './types/todo';
-import { useLocalStorage } from './hooks/useLocalStorage';
-import { useState } from 'react';
-
-export default function App() {
-  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', []);
-  const [input, setInput] = useState('');
-
-  const addTodo = () => {
-    if (!input.trim()) return;
-    setTodos([...todos, { id: crypto.randomUUID(), text: input, completed: false, createdAt: Date.now() }]);
-    setInput('');
-  };
-
-  const toggleTodo = (id: string) => {
-    setTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
-
-  return (
-    <div className="app">
-      <h1>Todo App</h1>
-      <div className="input-group">
-        <input value={input} onChange={e => setInput(e.target.value)} placeholder="Add todo..." />
-        <button onClick={addTodo}>Add</button>
-      </div>
-      <ul>{todos.map(t => (
-        <li key={t.id} onClick={() => toggleTodo(t.id)} style={{ textDecoration: t.completed ? 'line-through' : 'none' }}>
-          {t.text}
-        </li>
-      ))}</ul>
-    </div>
-  );
-}
-</devonzAction>
-<devonzAction type="shell">npm install</devonzAction>
-<devonzAction type="start">npm run dev</devonzAction>
-</devonzArtifact>
-
-The todo app is running with local storage persistence.</assistant_response>
+The coffee shop menu is now running.</assistant_response>
   </example>
 </examples>
 
