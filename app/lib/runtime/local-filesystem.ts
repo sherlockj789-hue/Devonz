@@ -19,13 +19,26 @@ import { createScopedLogger } from '~/utils/logger';
 const logger = createScopedLogger('LocalFileSystem');
 
 /*
- * Inline screenshot capture script — injected into generated app's index.html
- * so the preview iframe can respond to CAPTURE_SCREENSHOT_REQUEST messages.
+ * Screenshot capture script injection
+ *
+ * The preview iframe must include a small JS snippet that listens for
+ * CAPTURE_SCREENSHOT_REQUEST messages and responds with html2canvas renders.
+ *
+ * Two injection paths:
+ *   1. Static HTML apps  → inline <script> injected into index.html
+ *   2. Server-rendered apps (Next.js, Remix, etc.) → external _devonz-capture.js
+ *      written to public/ and a <script> tag injected into root layout files
  */
+
+/** The capture JS as a raw string (reused for both inline and external). */
+const CAPTURE_JS = `(function(){var L=false,G=false,C=[];function lh(cb){if(L&&window.html2canvas){cb(window.html2canvas);return}C.push(cb);if(G)return;G=true;var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";s.async=true;s.onload=function(){L=true;G=false;while(C.length)C.shift()(window.html2canvas)};s.onerror=function(){G=false;while(C.length)C.shift()(null)};document.head.appendChild(s)}window.addEventListener("message",function(e){if(e.data&&e.data.type==="CAPTURE_SCREENSHOT_REQUEST"){var rid=e.data.requestId,o=e.data.options||{},mw=o.width||960,mh=o.height||600;lh(function(h2c){if(!h2c){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*");return}var fh=Math.min(Math.max(document.body.scrollHeight,document.documentElement.scrollHeight,window.innerHeight),4000);h2c(document.body,{useCORS:true,allowTaint:true,backgroundColor:"#0d1117",scale:1,logging:false,width:window.innerWidth,height:fh,windowHeight:fh}).then(function(cv){var r=Math.min(mw/cv.width,mh/cv.height,1),tw=Math.round(cv.width*r),th=Math.round(cv.height*r),tc=document.createElement("canvas");tc.width=tw;tc.height=th;var cx=tc.getContext("2d");if(cx){cx.drawImage(cv,0,0,cv.width,cv.height,0,0,tw,th);window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:tc.toDataURL("image/webp",0.85),isPlaceholder:false},"*")}}).catch(function(){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*")})})}})})();`;
+
+/* ── Path 1: index.html inline injection ────────────────────────────────── */
+
 const CAPTURE_MARKER_START = '<!-- devonz:capture-start -->';
 const CAPTURE_MARKER_END = '<!-- devonz:capture-end -->';
 
-const CAPTURE_SCRIPT = `${CAPTURE_MARKER_START}<script>(function(){var L=false,G=false,C=[];function lh(cb){if(L&&window.html2canvas){cb(window.html2canvas);return}C.push(cb);if(G)return;G=true;var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";s.async=true;s.onload=function(){L=true;G=false;while(C.length)C.shift()(window.html2canvas)};s.onerror=function(){G=false;while(C.length)C.shift()(null)};document.head.appendChild(s)}window.addEventListener("message",function(e){if(e.data&&e.data.type==="CAPTURE_SCREENSHOT_REQUEST"){var rid=e.data.requestId,o=e.data.options||{},mw=o.width||960,mh=o.height||600;lh(function(h2c){if(!h2c){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*");return}var fh=Math.min(Math.max(document.body.scrollHeight,document.documentElement.scrollHeight,window.innerHeight),4000);h2c(document.body,{useCORS:true,allowTaint:true,backgroundColor:"#0d1117",scale:1,logging:false,width:window.innerWidth,height:fh,windowHeight:fh}).then(function(cv){var r=Math.min(mw/cv.width,mh/cv.height,1),tw=Math.round(cv.width*r),th=Math.round(cv.height*r),tc=document.createElement("canvas");tc.width=tw;tc.height=th;var cx=tc.getContext("2d");if(cx){cx.drawImage(cv,0,0,cv.width,cv.height,0,0,tw,th);window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:tc.toDataURL("image/webp",0.85),isPlaceholder:false},"*")}}).catch(function(){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*")})})}})})();</script>${CAPTURE_MARKER_END}`;
+const CAPTURE_SCRIPT = `${CAPTURE_MARKER_START}<script>${CAPTURE_JS}</script>${CAPTURE_MARKER_END}`;
 
 /** Regex to match the injected capture block (including newlines). */
 const CAPTURE_BLOCK_RE = new RegExp(
@@ -61,6 +74,49 @@ function injectCaptureScript(html: string): string {
   return clean;
 }
 
+/* ── Path 2: Root layout injection (Next.js App Router, etc.) ───────────── */
+
+/** Name of the external capture script written to public/. */
+const CAPTURE_SCRIPT_FILENAME = '_devonz-capture.js';
+
+/** Tag injected into root layout files. Uses a data attribute as a marker. */
+const LAYOUT_CAPTURE_TAG = `<script src="/${CAPTURE_SCRIPT_FILENAME}" data-devonz-capture="true"></script>`;
+
+/** Regex to strip the injected layout capture tag. */
+const LAYOUT_CAPTURE_RE = /\s*<script\s[^>]*data-devonz-capture[^>]*><\/script>/g;
+
+/**
+ * Check if a path + content represents a root HTML layout file.
+ * Matches Next.js App Router layouts (layout.tsx/jsx) that render the full
+ * `<html>` document with a `</body>` closing tag.
+ */
+function isRootLayout(filePath: string, content: string): boolean {
+  const base = nodePath.basename(filePath);
+
+  if (!/^layout\.(tsx|jsx|ts|js)$/.test(base)) {
+    return false;
+  }
+
+  // Must render the full HTML shell (lowercase <html or PascalCase <Html)
+  return (content.includes('<html') || content.includes('<Html')) && content.includes('</body>');
+}
+
+/** Strip the capture script tag from root layout content. */
+function stripLayoutCaptureTag(content: string): string {
+  return content.replace(LAYOUT_CAPTURE_RE, '');
+}
+
+/** Inject the capture script reference into a root layout (before </body>). */
+function injectLayoutCaptureTag(content: string): string {
+  const clean = stripLayoutCaptureTag(content);
+
+  if (clean.includes('</body>')) {
+    return clean.replace('</body>', `${LAYOUT_CAPTURE_TAG}\n</body>`);
+  }
+
+  return clean;
+}
+
 /**
  * Node.js native filesystem implementation for local project execution.
  *
@@ -71,9 +127,29 @@ function injectCaptureScript(html: string): string {
  */
 export class LocalFileSystem implements RuntimeFileSystem {
   readonly #root: string;
+  #captureScriptWritten = false;
 
   constructor(projectRoot: string) {
     this.#root = nodePath.resolve(projectRoot);
+  }
+
+  /**
+   * Write the external capture script to public/_devonz-capture.js.
+   * Skips if already written this session (idempotent).
+   */
+  async #ensureCaptureScriptFile(): Promise<void> {
+    if (this.#captureScriptWritten) {
+      return;
+    }
+
+    const publicDir = nodePath.join(this.#root, 'public');
+    await fs.mkdir(publicDir, { recursive: true });
+
+    const captureFile = nodePath.join(publicDir, CAPTURE_SCRIPT_FILENAME);
+    await fs.writeFile(captureFile, CAPTURE_JS, 'utf-8');
+    this.#captureScriptWritten = true;
+
+    logger.debug('Wrote external capture script to public/_devonz-capture.js');
   }
 
   /** Resolve a relative path to an absolute path within the project root. */
@@ -101,6 +177,11 @@ export class LocalFileSystem implements RuntimeFileSystem {
       return stripCaptureScript(content);
     }
 
+    // Strip injected capture tag from root layout files
+    if (content.includes('data-devonz-capture') && isRootLayout(path, content)) {
+      return stripLayoutCaptureTag(content);
+    }
+
     return content;
   }
 
@@ -121,8 +202,17 @@ export class LocalFileSystem implements RuntimeFileSystem {
     if (content instanceof Uint8Array) {
       await fs.writeFile(resolved, content);
     } else {
-      // Inject capture script into index.html so the preview iframe can take screenshots
-      const finalContent = isIndexHtml(path) ? injectCaptureScript(content) : content;
+      let finalContent = content;
+
+      if (isIndexHtml(path)) {
+        // Path 1: inject inline capture script into static HTML entry points
+        finalContent = injectCaptureScript(content);
+      } else if (isRootLayout(path, content)) {
+        // Path 2: inject external script reference into framework root layouts
+        finalContent = injectLayoutCaptureTag(content);
+        await this.#ensureCaptureScriptFile();
+      }
+
       await fs.writeFile(resolved, finalContent, 'utf-8');
     }
   }

@@ -339,4 +339,101 @@ describe('LocalFileSystem', () => {
       expect(captureIdx).toBeLessThan(headCloseIdx);
     });
   });
+
+  describe('root layout capture script injection', () => {
+    const sampleLayout = `import type { Metadata } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'My App',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+      </body>
+    </html>
+  );
+}`;
+
+    it('should inject capture script tag into root layout.tsx and strip on read', async () => {
+      await localFs.writeFile('app/layout.tsx', sampleLayout);
+
+      // readFile should return clean content
+      const readContent = await localFs.readFile('app/layout.tsx');
+      expect(readContent).not.toContain('data-devonz-capture');
+      expect(readContent).toContain("title: 'My App'");
+
+      // Raw disk content should contain the injected tag
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'layout.tsx'), 'utf-8');
+      expect(rawContent).toContain('data-devonz-capture');
+      expect(rawContent).toContain('_devonz-capture.js');
+    });
+
+    it('should write _devonz-capture.js to public/ directory', async () => {
+      await localFs.writeFile('app/layout.tsx', sampleLayout);
+
+      const captureScriptPath = nodePath.join(tmpDir, 'public', '_devonz-capture.js');
+      const exists = await fs
+        .access(captureScriptPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(exists).toBe(true);
+
+      const content = await fs.readFile(captureScriptPath, 'utf-8');
+      expect(content).toContain('CAPTURE_SCREENSHOT_REQUEST');
+      expect(content).toContain('PREVIEW_SCREENSHOT_RESPONSE');
+    });
+
+    it('should not inject into non-root layout files (no <html>)', async () => {
+      const nestedLayout = `export default function SectionLayout({ children }: { children: React.ReactNode }) {
+  return <section>{children}</section>;
+}`;
+      await localFs.writeFile('app/dashboard/layout.tsx', nestedLayout);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'dashboard', 'layout.tsx'), 'utf-8');
+      expect(rawContent).not.toContain('data-devonz-capture');
+    });
+
+    it('should not inject into non-layout files', async () => {
+      await localFs.writeFile('app/page.tsx', sampleLayout);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'page.tsx'), 'utf-8');
+      expect(rawContent).not.toContain('data-devonz-capture');
+    });
+
+    it('should not double-inject on repeated writes', async () => {
+      await localFs.writeFile('app/layout.tsx', sampleLayout);
+      await localFs.writeFile('app/layout.tsx', sampleLayout);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'layout.tsx'), 'utf-8');
+      const matches = rawContent.match(/data-devonz-capture/g);
+      expect(matches).toHaveLength(1);
+    });
+
+    it('should inject tag before </body> in JSX', async () => {
+      await localFs.writeFile('app/layout.tsx', sampleLayout);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'layout.tsx'), 'utf-8');
+      const captureIdx = rawContent.indexOf('data-devonz-capture');
+      const bodyCloseIdx = rawContent.indexOf('</body>');
+      expect(captureIdx).toBeLessThan(bodyCloseIdx);
+    });
+
+    it('should handle layout.jsx files', async () => {
+      const jsxLayout = `export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}`;
+      await localFs.writeFile('app/layout.jsx', jsxLayout);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'app', 'layout.jsx'), 'utf-8');
+      expect(rawContent).toContain('data-devonz-capture');
+    });
+  });
 });
