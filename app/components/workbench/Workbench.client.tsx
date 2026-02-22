@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import { computed } from 'nanostores';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { FileHistory } from '~/types/actions';
 import type { IChatMetadata } from '~/lib/persistence/db';
@@ -16,11 +16,12 @@ import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
-import { Preview } from './Preview';
-import { Versions } from './Versions';
-import { Plan } from './Plan';
-import { StagedChangesPanel } from './StagedChangesPanel';
-import { DiffPreviewModal } from './DiffPreviewModal';
+
+const Preview = lazy(() => import('./Preview').then((m) => ({ default: m.Preview })));
+const Versions = lazy(() => import('./Versions').then((m) => ({ default: m.Versions })));
+const Plan = lazy(() => import('./Plan').then((m) => ({ default: m.Plan })));
+const StagedChangesPanel = lazy(() => import('./StagedChangesPanel').then((m) => ({ default: m.StagedChangesPanel })));
+const DiffPreviewModal = lazy(() => import('./DiffPreviewModal').then((m) => ({ default: m.DiffPreviewModal })));
 import useViewport from '~/lib/hooks';
 
 import { usePreviewStore } from '~/lib/stores/previews';
@@ -347,11 +348,17 @@ export const Workbench = memo(
               />
             </div>
             {/* Plan component - shows when planning is active */}
-            <Plan />
+            <Suspense>
+              <Plan />
+            </Suspense>
             {/* Staged changes panel - shows pending file changes */}
-            <StagedChangesPanel />
+            <Suspense>
+              <StagedChangesPanel />
+            </Suspense>
             {/* Diff preview modal - for reviewing individual changes */}
-            <DiffPreviewModal />
+            <Suspense>
+              <DiffPreviewModal />
+            </Suspense>
             <div className="relative flex-1 overflow-hidden">
               <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
                 <EditorPanel
@@ -368,10 +375,14 @@ export const Workbench = memo(
                 />
               </View>
               <View initial={{ x: '100%' }} animate={{ x: selectedView === 'preview' ? '0%' : '100%' }}>
-                <Preview setSelectedElement={setSelectedElement} />
+                <Suspense>
+                  <Preview setSelectedElement={setSelectedElement} />
+                </Suspense>
               </View>
               <View initial={{ x: '100%' }} animate={{ x: selectedView === 'versions' ? '0%' : '100%' }}>
-                <Versions />
+                <Suspense>
+                  <Versions />
+                </Suspense>
               </View>
             </div>
           </div>
