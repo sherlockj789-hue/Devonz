@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  buildContentSecurityPolicy,
   checkRateLimit,
   createSecurityHeaders,
   validateApiKeyFormat,
@@ -118,6 +119,43 @@ describe('security', () => {
     });
   });
 
+  describe('buildContentSecurityPolicy', () => {
+    it('should include unsafe-eval only in development', () => {
+      const devCsp = buildContentSecurityPolicy(false);
+      expect(devCsp).toContain("'unsafe-eval'");
+      expect(devCsp).not.toContain("'strict-dynamic'");
+      expect(devCsp).not.toContain('upgrade-insecure-requests');
+    });
+
+    it('should include strict-dynamic and exclude unsafe-eval in production', () => {
+      const prodCsp = buildContentSecurityPolicy(true);
+      expect(prodCsp).not.toContain("'unsafe-eval'");
+      expect(prodCsp).toContain("'strict-dynamic'");
+    });
+
+    it('should include upgrade-insecure-requests in production', () => {
+      const prodCsp = buildContentSecurityPolicy(true);
+      expect(prodCsp).toContain('upgrade-insecure-requests');
+    });
+
+    it('should keep unsafe-inline for scripts in both environments', () => {
+      expect(buildContentSecurityPolicy(false)).toContain("script-src 'self' 'unsafe-inline'");
+      expect(buildContentSecurityPolicy(true)).toContain("script-src 'self' 'unsafe-inline'");
+    });
+
+    it('should keep unsafe-inline for styles in both environments', () => {
+      expect(buildContentSecurityPolicy(false)).toContain("style-src 'self' 'unsafe-inline'");
+      expect(buildContentSecurityPolicy(true)).toContain("style-src 'self' 'unsafe-inline'");
+    });
+
+    it('should include hardening directives', () => {
+      const csp = buildContentSecurityPolicy(false);
+      expect(csp).toContain("object-src 'none'");
+      expect(csp).toContain("base-uri 'self'");
+      expect(csp).toContain("form-action 'self'");
+    });
+  });
+
   describe('createSecurityHeaders', () => {
     it('should return all required security headers', () => {
       const headers = createSecurityHeaders();
@@ -158,12 +196,31 @@ describe('security', () => {
     });
 
     it('should not include HSTS in development', () => {
-      const headers = createSecurityHeaders();
+      const headers = createSecurityHeaders('development');
+      expect(headers).not.toHaveProperty('Strict-Transport-Security');
+    });
 
-      // In test environment (not production), HSTS should not be present
-      if (process.env.NODE_ENV !== 'production') {
-        expect(headers).not.toHaveProperty('Strict-Transport-Security');
-      }
+    it('should include HSTS in production', () => {
+      const headers = createSecurityHeaders('production');
+      expect(headers['Strict-Transport-Security']).toBe('max-age=31536000; includeSubDomains; preload');
+    });
+
+    it('should use production CSP when env is production', () => {
+      const headers = createSecurityHeaders('production');
+      const csp = headers['Content-Security-Policy'];
+
+      expect(csp).toContain("'strict-dynamic'");
+      expect(csp).not.toContain("'unsafe-eval'");
+      expect(csp).toContain('upgrade-insecure-requests');
+    });
+
+    it('should use development CSP when env is not production', () => {
+      const headers = createSecurityHeaders('development');
+      const csp = headers['Content-Security-Policy'];
+
+      expect(csp).toContain("'unsafe-eval'");
+      expect(csp).not.toContain("'strict-dynamic'");
+      expect(csp).not.toContain('upgrade-insecure-requests');
     });
   });
 

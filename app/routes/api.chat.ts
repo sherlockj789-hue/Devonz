@@ -462,7 +462,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
                   return;
                 }
               }
-            })();
+            })().catch((err) => {
+              logger.error('Continuation stream iteration failed:', err);
+            });
 
             return;
           },
@@ -518,7 +520,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           }
           streamRecovery.stop();
           logger.info(`⏱ streamText completed in ${(performance.now() - streamStart).toFixed(0)}ms`);
-        })();
+        })().catch((err) => {
+          streamRecovery.stop();
+          logger.error('Stream iteration failed:', err);
+        });
         result.mergeIntoDataStream(dataStream, { sendReasoning: enableThinking });
       },
       onError: (error: unknown) => {

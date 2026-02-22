@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { createScopedLogger } from '~/utils/logger';
 
@@ -98,9 +99,107 @@ function getClientIP(request: Request): string {
 }
 
 /**
- * Security headers middleware
+ * Build a Content Security Policy string based on environment context.
+ *
+ * ### CSP strategy
+ *
+ * Full nonce-based CSP is impractical in this Remix/React stack because
+ * UnoCSS, Radix UI portals and Framer Motion all inject inline styles,
+ * and the theme-init script runs inline before React hydrates.
+ *
+ * **`style-src 'unsafe-inline'`** — kept in every environment.  Migrating
+ * all inline styles to external sheets or nonces is not feasible today.
+ *
+ * **`script-src 'unsafe-eval'`** — allowed **only in development** so Vite
+ * HMR can function.  Removed entirely in production.
+ *
+ * **`script-src 'unsafe-inline'`** — kept for the theme-init script that
+ * must run before hydration.  In production, when `'strict-dynamic'` is
+ * present, modern browsers ignore `'unsafe-inline'`; it remains as a
+ * fallback for older user-agents.
+ *
+ * **`script-src 'strict-dynamic'`** — added in production so that scripts
+ * loaded by trusted first-party scripts are automatically trusted without
+ * needing an explicit allowlist for every sub-resource.
+ *
+ * **`upgrade-insecure-requests`** — added in production to automatically
+ * promote any remaining HTTP sub-resource requests to HTTPS.
+ *
+ * **`object-src 'none'`**, **`base-uri 'self'`**, **`form-action 'self'`**
+ * harden against plugin injection, base-tag hijacking and form-action
+ * hijacking respectively.
+ *
+ * @param isProduction - Whether the app is running in production mode.
+ * @returns The assembled CSP header value.
  */
-export function createSecurityHeaders() {
+export function buildContentSecurityPolicy(isProduction: boolean): string {
+  const scriptSrc = isProduction
+    ? "script-src 'self' 'unsafe-inline' 'strict-dynamic'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+
+  const directives: string[] = [
+    "default-src 'self'",
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' data:",
+    [
+      "connect-src 'self'",
+
+      // Git providers
+      'https://api.github.com',
+      'https://models.github.ai',
+      'https://gitlab.com',
+
+      // Deployment platforms
+      'https://api.netlify.com',
+      'https://api.vercel.com',
+      'https://*.supabase.co',
+      'https://api.supabase.com',
+
+      // LLM providers - Major
+      'https://api.openai.com',
+      'https://api.anthropic.com',
+      'https://generativelanguage.googleapis.com',
+
+      // LLM providers - Other
+      'https://api.groq.com',
+      'https://api.mistral.ai',
+      'https://api.cohere.com',
+      'https://api.deepseek.com',
+      'https://api.perplexity.ai',
+      'https://api.x.ai',
+      'https://api.together.xyz',
+      'https://api.hyperbolic.xyz',
+      'https://api.moonshot.ai',
+      'https://openrouter.ai',
+      'https://api-inference.huggingface.co',
+
+      // WebSocket support for real-time features
+      'wss://*.supabase.co',
+    ].join(' '),
+    "frame-src 'self' http://localhost:*",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+
+  if (isProduction) {
+    directives.push('upgrade-insecure-requests');
+  }
+
+  return directives.join('; ');
+}
+
+/**
+ * Security headers middleware.
+ *
+ * @param env - Optional override for the runtime environment
+ *              (defaults to `process.env.NODE_ENV`).
+ */
+export function createSecurityHeaders(env?: string) {
+  const isProduction = (env ?? process.env.NODE_ENV) === 'production';
+
   return {
     // Prevent clickjacking
     'X-Frame-Options': 'DENY',
@@ -111,53 +210,8 @@ export function createSecurityHeaders() {
     // Enable XSS protection
     'X-XSS-Protection': '1; mode=block',
 
-    // Content Security Policy - restrict to same origin and trusted sources
-    'Content-Security-Policy': [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Allow inline scripts for React
-      "style-src 'self' 'unsafe-inline'", // Allow inline styles
-      "img-src 'self' data: https: blob:", // Allow images from same origin, data URLs, and HTTPS
-      "font-src 'self' data:", // Allow fonts from same origin and data URLs
-      [
-        "connect-src 'self'",
-
-        // Git providers
-        'https://api.github.com',
-        'https://models.github.ai',
-        'https://gitlab.com',
-
-        // Deployment platforms
-        'https://api.netlify.com',
-        'https://api.vercel.com',
-        'https://*.supabase.co',
-        'https://api.supabase.com',
-
-        // LLM providers - Major
-        'https://api.openai.com',
-        'https://api.anthropic.com',
-        'https://generativelanguage.googleapis.com',
-
-        // LLM providers - Other
-        'https://api.groq.com',
-        'https://api.mistral.ai',
-        'https://api.cohere.com',
-        'https://api.deepseek.com',
-        'https://api.perplexity.ai',
-        'https://api.x.ai',
-        'https://api.together.xyz',
-        'https://api.hyperbolic.xyz',
-        'https://api.moonshot.ai',
-        'https://openrouter.ai',
-        'https://api-inference.huggingface.co',
-
-        // WebSocket support for real-time features
-        'wss://*.supabase.co',
-      ].join(' '),
-      "frame-src 'self' http://localhost:*", // Allow preview iframes from localhost dev servers
-      "object-src 'none'", // Prevent object embedding
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; '),
+    // Content Security Policy
+    'Content-Security-Policy': buildContentSecurityPolicy(isProduction),
 
     // Referrer Policy
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -166,7 +220,7 @@ export function createSecurityHeaders() {
     'Permissions-Policy': ['camera=()', 'microphone=()', 'geolocation=()', 'payment=()'].join(', '),
 
     // HSTS (HTTP Strict Transport Security) - only in production
-    ...(process.env.NODE_ENV === 'production'
+    ...(isProduction
       ? {
           'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
         }
@@ -222,6 +276,54 @@ export function sanitizeErrorMessage(error: unknown, isDevelopment = false): str
 }
 
 /**
+ * Validates the auth token from the request against the configured
+ * `DEVONZ_AUTH_TOKEN` environment variable.
+ *
+ * Token is read from the `X-Auth-Token` header or the `devonz-auth` cookie.
+ * If `DEVONZ_AUTH_TOKEN` is not set, auth is bypassed (local dev friendly).
+ * Uses timing-safe comparison to prevent timing attacks.
+ *
+ * @param request - The incoming request to validate.
+ * @returns `true` if the token is valid or if no auth token is configured.
+ */
+export function validateAuthToken(request: Request): boolean {
+  const expected = process.env.DEVONZ_AUTH_TOKEN;
+
+  // If no auth token is configured, bypass auth (local dev friendly)
+  if (!expected) {
+    return true;
+  }
+
+  // Extract token from X-Auth-Token header
+  let token = request.headers.get('X-Auth-Token');
+
+  // Fall back to devonz-auth cookie
+  if (!token) {
+    const cookies = request.headers.get('Cookie') ?? '';
+    const match = cookies.match(/(?:^|;\s*)devonz-auth=([^;]*)/);
+    token = match?.[1] ?? null;
+  }
+
+  if (!token) {
+    return false;
+  }
+
+  // Timing-safe comparison — both buffers must be the same length
+  try {
+    const expectedBuf = Buffer.from(expected, 'utf-8');
+    const actualBuf = Buffer.from(token, 'utf-8');
+
+    if (expectedBuf.length !== actualBuf.length) {
+      return false;
+    }
+
+    return timingSafeEqual(expectedBuf, actualBuf);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Security wrapper for API routes.
  * Accepts handlers that may or may not consume the args parameter.
  */
@@ -243,6 +345,20 @@ export function withSecurity(
       return new Response('Method not allowed', {
         status: 405,
         headers: createSecurityHeaders(),
+      });
+    }
+
+    // Check auth token when requireAuth is enabled
+    if (options.requireAuth && !validateAuthToken(request)) {
+      logger.warn(`Unauthorized request to ${endpoint} from ${getClientIP(request)}`);
+
+      return new Response(JSON.stringify({ error: true, message: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          ...createSecurityHeaders(),
+          'Content-Type': 'application/json',
+          'WWW-Authenticate': 'Bearer',
+        },
       });
     }
 
