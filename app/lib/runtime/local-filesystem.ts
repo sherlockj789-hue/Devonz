@@ -18,6 +18,49 @@ import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('LocalFileSystem');
 
+/*
+ * Inline screenshot capture script — injected into generated app's index.html
+ * so the preview iframe can respond to CAPTURE_SCREENSHOT_REQUEST messages.
+ */
+const CAPTURE_MARKER_START = '<!-- devonz:capture-start -->';
+const CAPTURE_MARKER_END = '<!-- devonz:capture-end -->';
+
+const CAPTURE_SCRIPT = `${CAPTURE_MARKER_START}<script>(function(){var L=false,G=false,C=[];function lh(cb){if(L&&window.html2canvas){cb(window.html2canvas);return}C.push(cb);if(G)return;G=true;var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";s.async=true;s.onload=function(){L=true;G=false;while(C.length)C.shift()(window.html2canvas)};s.onerror=function(){G=false;while(C.length)C.shift()(null)};document.head.appendChild(s)}window.addEventListener("message",function(e){if(e.data&&e.data.type==="CAPTURE_SCREENSHOT_REQUEST"){var rid=e.data.requestId,o=e.data.options||{},w=o.width||320,h=o.height||200;lh(function(h2c){if(!h2c){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*");return}h2c(document.body,{useCORS:true,allowTaint:true,backgroundColor:"#0d1117",scale:0.5,logging:false,width:window.innerWidth,height:window.innerHeight}).then(function(cv){var tc=document.createElement("canvas");tc.width=w;tc.height=h;var cx=tc.getContext("2d");if(cx){var sr=cv.width/cv.height,dr=w/h,sx=0,sy=0,sw=cv.width,sh=cv.height;if(sr>dr){sw=cv.height*dr;sx=(cv.width-sw)/2}else{sh=cv.width/dr}cx.drawImage(cv,sx,sy,sw,sh,0,0,w,h);window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:tc.toDataURL("image/jpeg",0.7),isPlaceholder:false},"*")}}).catch(function(){window.parent.postMessage({type:"PREVIEW_SCREENSHOT_RESPONSE",requestId:rid,dataUrl:"",isPlaceholder:true},"*")})})}})})();</script>${CAPTURE_MARKER_END}`;
+
+/** Regex to match the injected capture block (including newlines). */
+const CAPTURE_BLOCK_RE = new RegExp(
+  `\\s*${CAPTURE_MARKER_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${CAPTURE_MARKER_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+  'g',
+);
+
+/** Check if a path is an index.html entry point. */
+function isIndexHtml(filePath: string): boolean {
+  const base = nodePath.basename(filePath);
+  return base === 'index.html';
+}
+
+/** Strip the injected capture block from HTML content. */
+function stripCaptureScript(html: string): string {
+  return html.replace(CAPTURE_BLOCK_RE, '');
+}
+
+/** Inject the capture script into HTML content (before </head> or </body>). */
+function injectCaptureScript(html: string): string {
+  // Remove any existing injection first
+  let clean = stripCaptureScript(html);
+
+  // Inject before </head> if present, otherwise before </body>, otherwise append
+  if (clean.includes('</head>')) {
+    clean = clean.replace('</head>', `${CAPTURE_SCRIPT}\n</head>`);
+  } else if (clean.includes('</body>')) {
+    clean = clean.replace('</body>', `${CAPTURE_SCRIPT}\n</body>`);
+  } else {
+    clean += `\n${CAPTURE_SCRIPT}`;
+  }
+
+  return clean;
+}
+
 /**
  * Node.js native filesystem implementation for local project execution.
  *
@@ -51,7 +94,14 @@ export class LocalFileSystem implements RuntimeFileSystem {
 
   async readFile(path: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
     const resolved = this.#resolve(path);
-    return fs.readFile(resolved, { encoding });
+    const content = await fs.readFile(resolved, { encoding });
+
+    // Strip injected capture script so editor/git see clean content
+    if (isIndexHtml(path) && content.includes(CAPTURE_MARKER_START)) {
+      return stripCaptureScript(content);
+    }
+
+    return content;
   }
 
   async readFileRaw(path: string): Promise<Uint8Array> {
@@ -71,7 +121,9 @@ export class LocalFileSystem implements RuntimeFileSystem {
     if (content instanceof Uint8Array) {
       await fs.writeFile(resolved, content);
     } else {
-      await fs.writeFile(resolved, content, 'utf-8');
+      // Inject capture script into index.html so the preview iframe can take screenshots
+      const finalContent = isIndexHtml(path) ? injectCaptureScript(content) : content;
+      await fs.writeFile(resolved, finalContent, 'utf-8');
     }
   }
 

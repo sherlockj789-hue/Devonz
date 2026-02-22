@@ -272,4 +272,71 @@ describe('LocalFileSystem', () => {
       disposer();
     });
   });
+
+  describe('index.html capture script injection', () => {
+    const sampleHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test App</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>`;
+
+    it('should inject capture script into index.html on write and strip on read', async () => {
+      await localFs.writeFile('index.html', sampleHtml);
+
+      // readFile should return clean content (no injection)
+      const readContent = await localFs.readFile('index.html');
+      expect(readContent).not.toContain('devonz:capture-start');
+      expect(readContent).toContain('<title>Test App</title>');
+
+      // Raw disk content should contain the injection
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'index.html'), 'utf-8');
+      expect(rawContent).toContain('devonz:capture-start');
+      expect(rawContent).toContain('CAPTURE_SCREENSHOT_REQUEST');
+      expect(rawContent).toContain('PREVIEW_SCREENSHOT_RESPONSE');
+    });
+
+    it('should not inject into non-index.html files', async () => {
+      await localFs.writeFile('about.html', sampleHtml);
+
+      const readContent = await localFs.readFile('about.html');
+      expect(readContent).toBe(sampleHtml);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'about.html'), 'utf-8');
+      expect(rawContent).not.toContain('devonz:capture-start');
+    });
+
+    it('should not double-inject on repeated writes', async () => {
+      await localFs.writeFile('index.html', sampleHtml);
+      await localFs.writeFile('index.html', sampleHtml);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'index.html'), 'utf-8');
+      const matches = rawContent.match(/devonz:capture-start/g);
+      expect(matches).toHaveLength(1);
+    });
+
+    it('should inject into nested index.html paths', async () => {
+      await localFs.writeFile('public/index.html', sampleHtml);
+
+      const readContent = await localFs.readFile('public/index.html');
+      expect(readContent).not.toContain('devonz:capture-start');
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'public', 'index.html'), 'utf-8');
+      expect(rawContent).toContain('devonz:capture-start');
+    });
+
+    it('should inject before </head> tag', async () => {
+      await localFs.writeFile('index.html', sampleHtml);
+
+      const rawContent = await fs.readFile(nodePath.join(tmpDir, 'index.html'), 'utf-8');
+      const captureIdx = rawContent.indexOf('devonz:capture-start');
+      const headCloseIdx = rawContent.indexOf('</head>');
+      expect(captureIdx).toBeLessThan(headCloseIdx);
+    });
+  });
 });
