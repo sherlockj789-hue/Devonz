@@ -1,6 +1,5 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import { withSecurity } from '~/lib/security';
-import { requireApiAuth } from '~/lib/.server/api/auth';
 import type { V1StatusResponse } from '~/lib/.server/api/types';
 import { createScopedLogger } from '~/utils/logger';
 
@@ -22,7 +21,7 @@ async function statusLoader(_args: LoaderFunctionArgs): Promise<Response> {
   });
 }
 
-export const loader = withSecurity(requireApiAuth(statusLoader), {
+export const loader = withSecurity(statusLoader, {
   allowedMethods: ['GET'],
-  rateLimit: false, // rate limiting is handled by requireApiAuth (separate API pool)
+  rateLimit: true, // Enable rate limiting for public endpoints
 });
