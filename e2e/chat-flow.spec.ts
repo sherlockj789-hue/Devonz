@@ -104,8 +104,8 @@ test.describe('Chat flow', () => {
   test('loads app and verifies the chat page renders', async ({ page }) => {
     await page.goto('/');
 
-    // The page title should contain "Devonz"
-    await expect(page).toHaveTitle(/Devonz/);
+    // The page title should contain "codibl"
+    await expect(page).toHaveTitle(/codibl/);
 
     // The chat input textarea should be visible
     const chatInput = page.getByLabel('Chat message input');

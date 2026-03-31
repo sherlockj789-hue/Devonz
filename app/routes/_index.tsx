@@ -12,22 +12,22 @@ const UpdateBanner = lazy(() => import('~/components/ui/UpdateBanner').then((m) 
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'Devonz' },
-    { name: 'description', content: 'Talk with Devonz, an AI-powered development assistant' },
-    { property: 'og:title', content: 'Devonz' },
-    { property: 'og:description', content: 'Talk with Devonz, an AI-powered development assistant' },
+    { title: 'codibl' },
+    { name: 'description', content: 'Talk with codibl, an AI-powered development platform' },
+    { property: 'og:title', content: 'codibl' },
+    { property: 'og:description', content: 'Talk with codibl, an AI-powered development platform' },
     { property: 'og:type', content: 'website' },
     { property: 'og:image', content: '/logo-dark-styled.png' },
     { name: 'twitter:card', content: 'summary' },
-    { name: 'twitter:title', content: 'Devonz' },
-    { name: 'twitter:description', content: 'Talk with Devonz, an AI-powered development assistant' },
+    { name: 'twitter:title', content: 'codibl' },
+    { name: 'twitter:description', content: 'Talk with codibl, an AI-powered development platform' },
   ];
 };
 
 export const loader = () => Response.json({});
 
 /**
- * Landing page component for Devonz
+ * Landing page component for codibl
  * Note: Settings functionality should ONLY be accessed through the sidebar menu.
  * Do not add settings button/panel to this landing page as it was intentionally removed
  * to keep the UI clean and consistent with the design system.

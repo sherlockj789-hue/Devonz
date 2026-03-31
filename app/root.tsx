@@ -87,7 +87,7 @@ const inlineThemeCode = stripIndents`
   setTutorialKitTheme();
 
   function setTutorialKitTheme() {
-    let theme = localStorage.getItem('devonz_theme');
+    let theme = localStorage.getItem('codibl_theme');
 
     if (!theme) {
       theme = 'dark';
@@ -119,7 +119,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <noscript>
           <p style={{ padding: '2rem', color: '#fff', background: '#0a0a0a', textAlign: 'center' }}>
-            JavaScript is required to use Devonz.
+            JavaScript is required to use codibl.
           </p>
         </noscript>
         <div id="root" className="w-full h-full">

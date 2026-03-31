@@ -12,15 +12,15 @@ const GitUrlImport = clientLazy(() =>
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'Devonz' },
-    { name: 'description', content: 'Talk with Devonz, an AI-powered development assistant' },
-    { property: 'og:title', content: 'Devonz' },
-    { property: 'og:description', content: 'Talk with Devonz, an AI-powered development assistant' },
+    { title: 'codibl' },
+    { name: 'description', content: 'Talk with codibl, an AI-powered development platform' },
+    { property: 'og:title', content: 'codibl' },
+    { property: 'og:description', content: 'Talk with codibl, an AI-powered development platform' },
     { property: 'og:type', content: 'website' },
     { property: 'og:image', content: '/logo-dark-styled.png' },
     { name: 'twitter:card', content: 'summary' },
-    { name: 'twitter:title', content: 'Devonz' },
-    { name: 'twitter:description', content: 'Talk with Devonz, an AI-powered development assistant' },
+    { name: 'twitter:title', content: 'codibl' },
+    { name: 'twitter:description', content: 'Talk with codibl, an AI-powered development platform' },
   ];
 };
 
