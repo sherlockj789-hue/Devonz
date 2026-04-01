@@ -9,8 +9,8 @@ const TemplatesGallery = clientLazy(() => import('~/components/templates/Templat
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'Templates | Devonz' },
-    { name: 'description', content: 'Browse curated website templates for Devonz' },
+    { title: 'Templates | codibl' },
+    { name: 'description', content: 'Browse curated website templates for codibl' },
   ];
 };
 

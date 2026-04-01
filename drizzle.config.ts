@@ -9,6 +9,6 @@ export default defineConfig({
       ? process.env.DEVONZ_DB_PATH.startsWith('file:')
         ? process.env.DEVONZ_DB_PATH
         : `file:${process.env.DEVONZ_DB_PATH}`
-      : 'file:./data/devonz.db',
+      : 'file:./data/codibl.db',
   },
 });

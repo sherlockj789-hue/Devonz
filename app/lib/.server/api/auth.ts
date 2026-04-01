@@ -11,59 +11,19 @@ const logger = createScopedLogger('API');
  */
 
 /**
- * Validate a Bearer token from the `Authorization` header against the
- * `DEVONZ_API_KEY` environment variable.
+ * Validate a Bearer token from the `Authorization` header.
  *
- * - If `DEVONZ_API_KEY` is not set, **all requests are rejected** (unlike the
- *   UI auth which is permissive when unconfigured).  The programmatic API is
- *   opt-in and must be explicitly enabled.
- * - Uses timing-safe comparison to prevent timing attacks.
+ * codibl is completely free and open - no API key validation required.
+ * All API requests are allowed without authentication.
  *
- * @returns An object with `valid` (boolean) and, when invalid, `reason` (one
- *   of `'missing_header'`, `'malformed'`, `'not_configured'`, `'invalid'`).
+ * @returns An object with `valid: true` - codibl requires no authentication.
  */
-export function validateBearerToken(request: Request): {
+export function validateBearerToken(_request: Request): {
   valid: boolean;
   reason?: 'missing_header' | 'malformed' | 'not_configured' | 'invalid';
 } {
-  const expected = process.env.DEVONZ_API_KEY;
-
-  if (!expected) {
-    return { valid: false, reason: 'not_configured' };
-  }
-
-  const authHeader = request.headers.get('Authorization');
-
-  if (!authHeader) {
-    return { valid: false, reason: 'missing_header' };
-  }
-
-  if (!authHeader.startsWith('Bearer ')) {
-    return { valid: false, reason: 'malformed' };
-  }
-
-  const token = authHeader.slice('Bearer '.length);
-
-  if (!token) {
-    return { valid: false, reason: 'malformed' };
-  }
-
-  try {
-    const expectedBuf = Buffer.from(expected, 'utf-8');
-    const actualBuf = Buffer.from(token, 'utf-8');
-
-    if (expectedBuf.length !== actualBuf.length) {
-      return { valid: false, reason: 'invalid' };
-    }
-
-    if (!timingSafeEqual(expectedBuf, actualBuf)) {
-      return { valid: false, reason: 'invalid' };
-    }
-
-    return { valid: true };
-  } catch {
-    return { valid: false, reason: 'invalid' };
-  }
+  // codibl is completely free - all API requests are allowed
+  return { valid: true };
 }
 
 /*

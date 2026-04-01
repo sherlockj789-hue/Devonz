@@ -150,6 +150,6 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(PORT, () => {
-  log('info', `Devonz server listening on http://localhost:${PORT}`);
+  log('info', `codibl server listening on http://localhost:${PORT}`);
   log('info', `WebSocket endpoint: ws://localhost:${PORT}/ws`);
 });

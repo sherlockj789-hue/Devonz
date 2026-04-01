@@ -1,7 +1,6 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { streamText, type Messages } from '~/lib/.server/llm/stream-text';
 import { withSecurity } from '~/lib/security';
-import { requireApiAuth } from '~/lib/.server/api/auth';
 import { v1ChatRequestSchema, formatSSE } from '~/lib/.server/api/types';
 import { createScopedLogger } from '~/utils/logger';
 import { DEFAULT_PROVIDER } from '~/utils/constants';
@@ -108,7 +107,7 @@ async function v1ChatAction({ context, request }: ActionFunctionArgs): Promise<R
   });
 }
 
-export const action = withSecurity(requireApiAuth(v1ChatAction), {
+export const action = withSecurity(v1ChatAction, {
   allowedMethods: ['POST'],
-  rateLimit: false, // rate limiting is handled by requireApiAuth (separate API pool)
+  rateLimit: true, // Enable rate limiting for public endpoints
 });

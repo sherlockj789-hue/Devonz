@@ -276,51 +276,15 @@ export function sanitizeErrorMessage(error: unknown, isDevelopment = false): str
 }
 
 /**
- * Validates the auth token from the request against the configured
- * `DEVONZ_AUTH_TOKEN` environment variable.
- *
- * Token is read from the `X-Auth-Token` header or the `devonz-auth` cookie.
- * If `DEVONZ_AUTH_TOKEN` is not set, auth is bypassed (local dev friendly).
- * Uses timing-safe comparison to prevent timing attacks.
+ * Authentication check - codibl is completely free and open.
+ * This function always returns true to allow all requests without authentication.
  *
  * @param request - The incoming request to validate.
- * @returns `true` if the token is valid or if no auth token is configured.
+ * @returns Always `true` - codibl requires no authentication.
  */
-export function validateAuthToken(request: Request): boolean {
-  const expected = process.env.DEVONZ_AUTH_TOKEN;
-
-  // If no auth token is configured, bypass auth (local dev friendly)
-  if (!expected) {
-    return true;
-  }
-
-  // Extract token from X-Auth-Token header
-  let token = request.headers.get('X-Auth-Token');
-
-  // Fall back to devonz-auth cookie
-  if (!token) {
-    const cookies = request.headers.get('Cookie') ?? '';
-    const match = cookies.match(/(?:^|;\s*)devonz-auth=([^;]*)/);
-    token = match?.[1] ?? null;
-  }
-
-  if (!token) {
-    return false;
-  }
-
-  // Timing-safe comparison — both buffers must be the same length
-  try {
-    const expectedBuf = Buffer.from(expected, 'utf-8');
-    const actualBuf = Buffer.from(token, 'utf-8');
-
-    if (expectedBuf.length !== actualBuf.length) {
-      return false;
-    }
-
-    return timingSafeEqual(expectedBuf, actualBuf);
-  } catch {
-    return false;
-  }
+export function validateAuthToken(_request: Request): boolean {
+  // codibl is completely free - no authentication required
+  return true;
 }
 
 /**

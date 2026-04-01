@@ -1,7 +1,7 @@
 {
-  "name": "Devonz",
-  "short_name": "Devonz",
-  "description": "AI-powered full-stack development agent",
+  "name": "codibl",
+  "short_name": "codibl",
+  "description": "AI-powered development platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
