@@ -1,0 +1,705 @@
+# Instincts generated from https://github.com/sherlockj789-hue/Devonz
+# Generated: 2026-04-01T00:03:53.797Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: Devonz-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix, feat, chore, refactor
+
+## Evidence
+
+- 200 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: Phase E agent mode v3 + Sentry improvements, fix: migrate react-markdown v10 and react-window v2 API changes
+
+---
+id: Devonz-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Commit Length
+
+## Action
+
+Write moderate-length commit messages (~65 characters)
+
+## Evidence
+
+- Average commit message length: 65 chars
+- Based on 200 commits
+
+---
+id: Devonz-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: Devonz-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: Devonz-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Test Framework
+
+## Action
+
+Use vitest as the test framework
+
+## Evidence
+
+- Test framework detected: vitest
+- File pattern: *.test.ts
+
+---
+id: Devonz-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: Devonz-test-mocking
+trigger: "when mocking dependencies in tests"
+confidence: 0.75
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Test Mocking
+
+## Action
+
+Use vi.mock for mocking
+
+## Evidence
+
+- Mocking pattern detected: vi.mock
+- Consistent across test files
+
+---
+id: Devonz-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Test Types
+
+## Action
+
+Write unit, integration, e2e tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration, e2e
+- Coverage config: yes
+
+---
+id: Devonz-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~11x per month
+- Files: app/lib/services/*, app/utils/errors/*, app/utils/*
+
+---
+id: Devonz-workflow-refactoring
+trigger: "when refactoring code"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Refactoring
+
+## Action
+
+Follow the refactoring workflow:
+1. Ensure tests pass before refactor
+2. Refactor code structure
+3. Verify tests still pass
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~6x per month
+- Files: src/**/*
+
+---
+id: Devonz-workflow-add-or-update-api-endpoint
+trigger: "when doing add or update api endpoint"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Add Or Update Api Endpoint
+
+## Action
+
+Follow the add-or-update-api-endpoint workflow:
+1. Create or update app/routes/api.[endpoint].ts
+2. Update or create corresponding type definitions in .react-router/types/app/routes/+types/api.[endpoint].ts
+3. Add or update tests in app/test/routes/api.[endpoint].test.ts (if applicable)
+4. Update shared API utilities or schemas if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: app/routes/api.*.ts, .react-router/types/app/routes/+types/api.*.ts, app/test/routes/api.*.test.ts
+
+---
+id: Devonz-workflow-database-schema-migration
+trigger: "when doing database schema migration"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Database Schema Migration
+
+## Action
+
+Follow the database-schema-migration workflow:
+1. Edit app/lib/.server/db/schema.ts
+2. Generate or update migration SQL in drizzle/ (e.g., drizzle/0000_*.sql)
+3. Update migration metadata in drizzle/meta/
+4. Update Drizzle config (drizzle.config.ts) if needed
+5. Update or create related API routes (app/routes/api.db.*.ts)
+6. Update or create related tests (app/test/routes/api.db.*.test.ts)
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: app/lib/.server/db/schema.ts, drizzle/*.sql, drizzle/meta/*
+
+---
+id: Devonz-workflow-dependency-upgrade
+trigger: "when doing dependency upgrade"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Dependency Upgrade
+
+## Action
+
+Follow the dependency-upgrade workflow:
+1. Update package.json with new dependency versions
+2. Update pnpm-lock.yaml
+3. If major version, update code to handle breaking changes (e.g., component API changes)
+4. If needed, update vite.config.ts or other build configs
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: package.json, pnpm-lock.yaml, vite.config.ts
+
+---
+id: Devonz-workflow-feature-development-with-docs-and-tests
+trigger: "when doing feature development with docs and tests"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Feature Development With Docs And Tests
+
+## Action
+
+Follow the feature-development-with-docs-and-tests workflow:
+1. Implement feature in app/components/, app/lib/, or app/routes/
+2. Update or add tests in app/test/ or app/lib/.server/**/*.test.ts
+3. Update or add documentation in docs/ or plan/
+4. Update types in app/types/ if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: app/components/**/*.tsx, app/lib/**/*.ts, app/routes/**/*.ts
+
+---
+id: Devonz-workflow-ci-workflow-update
+trigger: "when doing ci workflow update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Ci Workflow Update
+
+## Action
+
+Follow the ci-workflow-update workflow:
+1. Edit .github/workflows/ci.yml to update actions or steps
+2. Commit with chore(ci): or similar message
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: .github/workflows/ci.yml
+
+---
+id: Devonz-workflow-refactor-and-lazy-load-components
+trigger: "when doing refactor and lazy load components"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sherlockj789-hue/Devonz
+---
+
+# Devonz Workflow Refactor And Lazy Load Components
+
+## Action
+
+Follow the refactor-and-lazy-load-components workflow:
+1. Split large components in app/components/ into smaller files
+2. Implement React.lazy or dynamic imports for heavy components
+3. Update references in parent components
+4. Update package.json and vite.config.ts if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: app/components/**/*.tsx, app/utils/*.ts, package.json
+
+---
+id: devonz-camelcase-files
+trigger: "When creating or renaming a file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Camelcase Files
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+- Seen in app/lib/services/autoFixService.ts
+
+---
+id: devonz-camelcase-functions
+trigger: "When defining a function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Camelcase Functions
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+- Seen in app/utils/previewErrorHandler.ts
+
+---
+id: devonz-pascalcase-classes
+trigger: "When defining a class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Pascalcase Classes
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+- Seen in app/components/chat/BaseChat.tsx
+
+---
+id: devonz-screaming-constants
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Screaming Constants
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+- Seen in app/utils/errors/errorConfig.ts
+
+---
+id: devonz-absolute-imports
+trigger: "When importing modules"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Absolute Imports
+
+## Action
+
+Use absolute import paths
+
+## Evidence
+
+- Pattern in importStyle
+- Seen in app/components/workbench/Preview.tsx
+
+---
+id: devonz-named-exports
+trigger: "When exporting modules"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Named Exports
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+- Seen in app/lib/hooks/useGitLabConnection.ts
+
+---
+id: devonz-vitest-test-pattern
+trigger: "When writing a test file"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Vitest Test Pattern
+
+## Action
+
+Name the file with a .test.ts suffix and use Vitest framework
+
+## Evidence
+
+- Pattern in testing.filePattern
+- Seen in app/test/routes/api.*.test.ts
+
+---
+id: devonz-vi-mock-usage
+trigger: "When mocking dependencies in tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Vi Mock Usage
+
+## Action
+
+Use vi.mock for mocking
+
+## Evidence
+
+- Pattern in testing.mockingStyle
+- Seen in app/test/**/*.test.ts
+
+---
+id: devonz-coverage-config
+trigger: "When configuring tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Coverage Config
+
+## Action
+
+Enable coverage configuration
+
+## Evidence
+
+- Pattern in testing.coverageConfig
+- Seen in vitest.config.ts
+
+---
+id: devonz-conventional-commits
+trigger: "When writing a commit message"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Conventional Commits
+
+## Action
+
+Use conventional commit prefixes: feat, fix, chore, refactor, ci, perf
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit 'feat: Phase E agent mode v3 + Sentry improvements'
+
+---
+id: devonz-commit-length
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Commit Length
+
+## Action
+
+Keep commit messages concise, around 65 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+- Seen in commit examples
+
+---
+id: devonz-add-or-update-api-endpoint
+trigger: "When introducing or modifying an API endpoint"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Add Or Update Api Endpoint
+
+## Action
+
+Create or update app/routes/api.[endpoint].ts, update types in .react-router/types/app/routes/+types/api.[endpoint].ts, add/update tests in app/test/routes/api.[endpoint].test.ts, and update app/lib/api/schemas.ts if needed
+
+## Evidence
+
+- Workflow: add-or-update-api-endpoint
+- Files: app/routes/api.*.ts, .react-router/types/app/routes/+types/api.*.ts, app/test/routes/api.*.test.ts, app/lib/api/schemas.ts
+
+---
+id: devonz-database-schema-migration
+trigger: "When changing the database structure"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Database Schema Migration
+
+## Action
+
+Edit app/lib/.server/db/schema.ts, update/generate drizzle/*.sql, update drizzle/meta/, update drizzle.config.ts if needed, update/create related API routes and tests
+
+## Evidence
+
+- Workflow: database-schema-migration
+- Files: app/lib/.server/db/schema.ts, drizzle/*.sql, drizzle/meta/*, drizzle.config.ts, app/routes/api.db.*.ts, app/test/routes/api.db.*.test.ts
+
+---
+id: devonz-dependency-upgrade
+trigger: "When upgrading dependencies"
+confidence: 0.98
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Dependency Upgrade
+
+## Action
+
+Update package.json, pnpm-lock.yaml, update code for breaking changes, update vite.config.ts if needed
+
+## Evidence
+
+- Workflow: dependency-upgrade
+- Files: package.json, pnpm-lock.yaml, vite.config.ts, app/components/**/*.tsx
+
+---
+id: devonz-feature-development-with-docs-and-tests
+trigger: "When adding a new user-facing feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Feature Development With Docs And Tests
+
+## Action
+
+Implement feature in app/components/, app/lib/, or app/routes/, add/update tests, update documentation in docs/ or plan/, update types in app/types/ if needed
+
+## Evidence
+
+- Workflow: feature-development-with-docs-and-tests
+- Files: app/components/**/*.tsx, app/lib/**/*.ts, app/routes/**/*.ts, app/test/**/*.test.ts, docs/*.md, plan/*.md, app/types/*.ts
+
+---
+id: devonz-ci-workflow-update
+trigger: "When updating CI/CD processes or actions"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Ci Workflow Update
+
+## Action
+
+Edit .github/workflows/ci.yml and commit with chore(ci): or similar message
+
+## Evidence
+
+- Workflow: ci-workflow-update
+- Files: .github/workflows/ci.yml
+
+---
+id: devonz-refactor-and-lazy-load-components
+trigger: "When improving performance or code structure"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: sherlockj789-hue/Devonz
+---
+
+# Devonz Refactor And Lazy Load Components
+
+## Action
+
+Split large components in app/components/, implement React.lazy or dynamic imports, update references, update package.json and vite.config.ts if needed
+
+## Evidence
+
+- Workflow: refactor-and-lazy-load-components
+- Files: app/components/**/*.tsx, app/utils/*.ts, package.json, vite.config.ts
+
